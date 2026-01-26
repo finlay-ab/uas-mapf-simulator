@@ -20,6 +20,7 @@ def test_single_job_completes():
     # helper to push job to queue
     def push_one_job(env, q):
         yield env.timeout(1)
+        metrics.record_job_created()
         yield q.put("JOB-1")
     
     # push 1 job at t=1
