@@ -3,7 +3,8 @@ import random
 import numpy as np
 import logging
 from entities import UAV
-from environment import SpatialManager, Metrics
+from metrics import Metrics
+from environment import SpatialManager
 from policies.greedy import GreedyPolicy
 
 # config
@@ -18,12 +19,16 @@ FLEET_SIZE = 4      # number of active UAVs
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 log = logging.getLogger("UAS_Sim")
 
-def job_generator(env, job_queue):
+def job_generator(env, job_queue, metrics):
     job_count = 0
     while True:
         # poisson inter-arrival time
         yield env.timeout(random.expovariate(LAMBDA))
         job_count += 1
+        
+        # update metrics count
+        metrics.jobs_requested = job_count
+        
         job = {
             'id': job_count, 
             'goal': [random.uniform(0, 100), random.uniform(0, 100)]
@@ -33,11 +38,12 @@ def job_generator(env, job_queue):
 
 def monitor(env, sm, metrics):
     while True:
-        if sm.check_conflicts():
-            metrics.total_violations += 1
+        # check conflicts and update violation count
+        sm.check_conflicts(metrics)
         yield env.timeout(DT)
 
 if __name__ == "__main__":
+    # set up sim
     env = simpy.Environment()
     sm = SpatialManager(SAFETY_RADIUS)
     met = Metrics()
@@ -48,11 +54,14 @@ if __name__ == "__main__":
     for i in range(FLEET_SIZE):
         UAV(env, f"UAV_{i}", [10, 10], sm, met, pol, job_queue, DT)
 
-    env.process(job_generator(env, job_queue))
+    # start processes
+    env.process(job_generator(env, job_queue, met))
     env.process(monitor(env, sm, met))
     
+    # run sim
     env.run(until=SIM_TIME)
     
     print(f"\nExperiment Results:")
-    print(f"Total Deliveries: {met.completed_deliveries}")
-    print(f"Total Separation Violations: {met.total_violations}")
+    stats = met.get_summary_statistics()
+    for key, value in stats.items():
+        print(f"{key}: {value}")
