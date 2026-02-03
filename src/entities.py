@@ -53,8 +53,10 @@ class UAV:
             yield self.env.timeout(2.0) 
 
             # en_route to target
+            start_delivery = self.env.now
             self.state = UAVState.EN_ROUTE
             yield from self.execute_flight(target)
+            self.metrics.record_delivery_phase(self.env.now - start_delivery)
 
             # drop off package (3s timeout to simulate delivery)
             self.state = UAVState.DELIVERING
@@ -63,8 +65,10 @@ class UAV:
             log.info(f"[{self.env.now:4.1f}] {self.uav_id} completed job {job['id']}")
 
             # return to depot
+            start_return = self.env.now
             self.state = UAVState.RETURNING
             yield from self.execute_flight(self.depot)
+            self.metrics.record_return_phase(self.env.now - start_return)
             
             # landing phase (2s timeout to simulate landing)
             self.state = UAVState.LANDING
