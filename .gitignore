@@ -5,3 +5,6 @@ venv/
 env/
 .pytest_cache/
 .vscode/
+src/run_results.csv
+.gitignore
+src/simulation.log
