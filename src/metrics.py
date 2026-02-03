@@ -1,4 +1,5 @@
 import numpy as np
+import csv
 
 # metrics for testing and evaluation
 class Metrics:
@@ -56,3 +57,33 @@ class Metrics:
             "total violations": self.total_violations,
             "min separation (m)": separation_text
         }
+
+    def save_to_csv(self, filename="run_results.csv"):
+        # get stats
+        stats = self.get_summary_statistics()
+
+        # open file 
+        with open(filename, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            
+            # write data 
+            writer.writerow(["SECTION:", "RAW MISSION DATA"])
+            writer.writerow(["Mission_ID", "Delivery_Time_s", "Return_Time_s"])
+            
+            for i in range(len(self.delivery_times)):
+                mission_id = i + 1
+                d_time = self.delivery_times[i]
+                r_time = "N/A"
+                if i < len(self.return_times):
+                    r_time = self.return_times[i]
+                writer.writerow([mission_id, d_time, r_time])
+
+            # add empty lines to separate sections
+            writer.writerow([])
+            writer.writerow([])
+
+            # write aggregate stats
+            writer.writerow(["SECTION:", "AGGREGATE STATISTICS"])
+            # loop through dict
+            for key, value in stats.items():
+                writer.writerow([key, value])

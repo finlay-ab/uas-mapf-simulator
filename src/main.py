@@ -16,7 +16,14 @@ MAX_SPEED = 5.0
 FLEET_SIZE = 4      # number of active UAVs
 
 # set logging
-logging.basicConfig(level=logging.INFO, format="%(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(message)s",
+    handlers=[
+        logging.FileHandler("simulation.log", mode="w"),  # write to file
+        logging.StreamHandler()  # print to cli
+    ]
+)
 log = logging.getLogger("UAS_Sim")
 
 def job_generator(env, job_queue, metrics):
@@ -60,8 +67,14 @@ if __name__ == "__main__":
     
     # run sim
     env.run(until=SIM_TIME)
+    log.info(f"[{env.now:4.1f}] END OF SIMULATION")
     
     print(f"\nExperiment Results:")
     stats = met.get_summary_statistics()
     for key, value in stats.items():
         print(f"{key}: {value}")
+
+    # save metrics to csv
+    met.save_to_csv("run_results.csv")
+    log.info("metrics saved to run_results.csv")
+    log.info("log saved to simulation.log")
