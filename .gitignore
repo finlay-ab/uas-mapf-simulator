@@ -8,3 +8,5 @@ env/
 src/run_results.csv
 .gitignore
 src/simulation.log
+simulation.log
+run_results.csv
