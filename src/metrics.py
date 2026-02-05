@@ -12,12 +12,16 @@ class Metrics:
         self.min_separation_observed = float('inf') 
         self.flight_paths = {} 
 
+    def record_job_request(self):
+        self.jobs_requested += 1
+
     def record_path(self, uav_id, pos):
         if uav_id not in self.flight_paths: 
             self.flight_paths[uav_id] = []
         self.flight_paths[uav_id].append(pos.copy())
 
     def record_delivery_phase(self, duration):
+        self.completed_deliveries += 1
         self.delivery_times.append(duration)
 
     def record_return_phase(self, duration):
@@ -26,6 +30,9 @@ class Metrics:
     def record_separation(self, distance):
         if distance < self.min_separation_observed:
             self.min_separation_observed = distance
+        
+        if distance < 5.0:
+            self.total_violations += 1
 
     def get_summary_statistics(self):
         # if there is delivery times then
