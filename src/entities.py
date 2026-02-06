@@ -34,6 +34,7 @@ class UAV:
         
         # start at depot
         self.state = UAVState.IDLE_DEPOT
+        self.current_job = None 
         
         # start process
         self.action = env.process(self.run())
@@ -43,10 +44,10 @@ class UAV:
         while True:
             # idle at depot (waiting for job)
             self.state = UAVState.IDLE_DEPOT
-            job = yield self.job_queue.get()
-            target = np.array(job['goal'], dtype=float)
+            self.current_job = yield self.job_queue.get()
+            target = np.array(self.current_job['goal'], dtype=float)
             
-            log.info(f"[{self.env.now:4.1f}] {self.uav_id} assigned to job {job['id']}")
+            log.info(f"[{self.env.now:4.1f}] {self.uav_id} assigned to job {self.current_job['id']}")
 
             # takeoff phase (2s timeout to simulate takeoff)
             self.state = UAVState.TAKEOFF
@@ -56,13 +57,14 @@ class UAV:
             start_delivery = self.env.now
             self.state = UAVState.EN_ROUTE
             yield from self.execute_flight(target)
+            
+            # record delivery time 
             self.metrics.record_delivery_phase(self.env.now - start_delivery)
 
             # drop off package (3s timeout to simulate delivery)
             self.state = UAVState.DELIVERING
             yield self.env.timeout(3.0) 
-            self.metrics.completed_deliveries += 1
-            log.info(f"[{self.env.now:4.1f}] {self.uav_id} completed job {job['id']}")
+            log.info(f"[{self.env.now:4.1f}] {self.uav_id} completed job {self.current_job['id']}")
 
             # return to depot
             start_return = self.env.now
@@ -74,6 +76,9 @@ class UAV:
             self.state = UAVState.LANDING
             yield self.env.timeout(2.0)
             log.info(f"[{self.env.now:4.1f}] {self.uav_id} recovered at depot.")
+
+            # clear job
+            self.current_job = None
 
     def execute_flight(self, destination):
         # while not within 0.5 units of destination
