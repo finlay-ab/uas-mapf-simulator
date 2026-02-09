@@ -2,6 +2,7 @@ from enum import auto, Enum
 import numpy as np
 import simpy
 import logging
+from physics import Velocity
 
 # get log
 log = logging.getLogger("UAS_Sim")
@@ -24,7 +25,7 @@ class UAV:
         self.uav_id = id
         self.depot = np.array(depot_pos, dtype=float)
         self.pos = np.array(depot_pos, dtype=float)
-        self.vel = np.array([0.0, 0.0])
+        self.vel = Velocity(0.0, 0.0)
 
         self.sm = spartial_manager
         self.metrics = metrics
@@ -87,7 +88,7 @@ class UAV:
             new_vel = self.policy.get_velocity(self.uav_id, self.pos, destination, self.sm)
             
             # if velocity is near zero, hover
-            if np.linalg.norm(new_vel) < 0.1:
+            if new_vel.magnitude() < 0.1:
                 self.state = UAVState.HOVER_WAIT
             else:
                 # if returning to depot 
@@ -99,8 +100,8 @@ class UAV:
             self.vel = new_vel
             
             # update pos
-            self.pos += self.vel * self.dt
-            self.sm.update(self.uav_id, self.pos, self.vel, self.state)
+            self.pos += self.vel.as_array() * self.dt
+            self.sm.update(self.uav_id, self.pos, self.vel.as_array(), self.state)
             
             # collect metrics
             self.metrics.record_path(self.uav_id, self.pos)
@@ -108,5 +109,5 @@ class UAV:
             yield self.env.timeout(self.dt)
         
         # arrived set vel to zero
-        self.vel = np.array([0.0, 0.0])
-        self.sm.update(self.uav_id, self.pos, self.vel, self.state)
+        self.vel = Velocity(0.0, 0.0)
+        self.sm.update(self.uav_id, self.pos, self.vel.as_array(), self.state)

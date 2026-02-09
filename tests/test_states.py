@@ -4,6 +4,7 @@ import numpy as np
 from src.entities import UAV, UAVState
 from src.metrics import Metrics
 from src.environment import SpatialManager 
+from src.physics import Velocity
 
 class TestStates(unittest.TestCase):
 
@@ -18,7 +19,7 @@ class TestStates(unittest.TestCase):
         
         class MockPolicy:
             def get_velocity(self, id, pos, goal, sm):
-                return np.array([1.0, 1.0])
+                return Velocity(1.0, 1.0)
 
         uav = UAV(env, "UAV_0", [0,0], sm, met, MockPolicy(), job_queue)
         state_history = []

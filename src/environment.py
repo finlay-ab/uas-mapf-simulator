@@ -21,12 +21,7 @@ class SpatialManager:
         
         for i in range(len(uav_ids)):
             for j in range(i + 1, len(uav_ids)):
-                # calculate euclidean distance between pair
-                uav_i = uav_ids[i]
-                uav_j = uav_ids[j]
-                dist = np.linalg.norm(self.positions[uav_i] - self.positions[uav_j])
-                
-                # check if distance is less than the diameter of the safety buffer
+                dist = np.linalg.norm(self.positions[uav_ids[i]] - self.positions[uav_ids[j]])
                 metrics.record_separation(dist)
                 
                 if dist < (2 * self.safety_radius):
