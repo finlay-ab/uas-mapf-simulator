@@ -6,6 +6,7 @@ from entities import UAV
 from metrics import Metrics
 from environment import SpatialManager
 from policies.greedy import GreedyPolicy
+from policies.vo_policy import VOPolicy
 
 # config
 DT = 0.5            # simulation time step [s]
@@ -54,7 +55,7 @@ if __name__ == "__main__":
     env = simpy.Environment()
     sm = SpatialManager(SAFETY_RADIUS)
     met = Metrics()
-    pol = GreedyPolicy(MAX_SPEED)
+    pol = VOPolicy(MAX_SPEED, SAFETY_RADIUS)
     job_queue = simpy.Store(env)
 
     # initialize fleet at Depot [10, 10]
