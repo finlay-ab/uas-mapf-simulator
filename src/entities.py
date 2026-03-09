@@ -2,7 +2,7 @@ from enum import auto, Enum
 import numpy as np
 import simpy
 import logging
-from physics import Velocity
+from .physics import Velocity
 
 # get log
 log = logging.getLogger("UAS_Sim")
@@ -101,7 +101,7 @@ class UAV:
             
             # update pos
             self.pos += self.vel.as_array() * self.dt
-            self.sm.update(self.uav_id, self.pos, self.vel.as_array(), self.state)
+            self.sm.update(self.uav_id, self.pos, self.vel, self.state)
             
             # collect metrics
             self.metrics.record_path(self.uav_id, self.pos)
@@ -110,4 +110,4 @@ class UAV:
         
         # arrived set vel to zero
         self.vel = Velocity(0.0, 0.0)
-        self.sm.update(self.uav_id, self.pos, self.vel.as_array(), self.state)
+        self.sm.update(self.uav_id, self.pos, self.vel, self.state)
