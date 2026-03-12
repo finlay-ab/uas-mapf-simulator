@@ -20,6 +20,7 @@ class SimConfig:
     
     # policy vars
     policy: str = "vo"          
+    use_vo = True
     
     # out
     log_file: str = "simulation.log"

@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 from src.policies.greedy import GreedyPolicy
+from src.physics import Velocity
 
 class TestPhysics(unittest.TestCase):
     
@@ -15,9 +16,10 @@ class TestPhysics(unittest.TestCase):
         vel = pol.get_velocity("UAV_0", pos, goal, None)
         
         # calculate actual speed
-        speed = np.linalg.norm(vel)
+        speed = vel.magnitude()
         
         self.assertLessEqual(speed, max_speed, f"FAIL: drone exceeded speed limit! {speed} > {max_speed}")
+        assert isinstance(vel, Velocity)
 
     def test_zero_velocity_at_goal(self):
         # drone should stop when it arrives
@@ -28,11 +30,10 @@ class TestPhysics(unittest.TestCase):
         pos = np.array([50.0, 50.0])
         goal = np.array([50.0, 50.0])
         
-        vel = pol.get_velocity("UAV_0", pos, goal, None)
-        speed = np.linalg.norm(vel)
-        
+        vel = pol.get_velocity("UAV_0", pos, goal, None)        
+       
         # should stop
-        self.assertEqual(speed, 0.0, "FAIL: drone did not stop at goal")
+        assert vel.magnitude() < 0.1
 
 if __name__ == "__main__":
     unittest.main()

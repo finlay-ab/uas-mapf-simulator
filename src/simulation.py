@@ -6,8 +6,7 @@ import numpy as np
 from src.entities import UAV
 from src.metrics import Metrics
 from src.environment import SpatialManager
-from src.policies.greedy import GreedyPolicy
-from src.policies.vo_policy import VOPolicy
+from src.policies.factory import create_policy
 
 # logging
 log = logging.getLogger("UAS_Sim")
@@ -15,7 +14,8 @@ log = logging.getLogger("UAS_Sim")
 class Simulation:
     def __init__(self, config):
         self.cfg = config
-        
+
+        # setup logging
         logging.basicConfig(
             level=logging.INFO,
             format="%(message)s",
@@ -27,7 +27,7 @@ class Simulation:
             force=True 
         )
         
-        self.cfg = config
+        # create env
         self.env = simpy.Environment()
         self.job_queue = simpy.Store(self.env)
         
@@ -36,14 +36,14 @@ class Simulation:
         self.metrics = Metrics() 
         
         # get policy
-        if self.cfg.policy == "greedy":
-            self.policy = GreedyPolicy(self.cfg.max_speed)
-            log.info("Active Policy: Greedy (baseline - no avoidance)")
-        elif self.cfg.policy == "vo":
-            self.policy = VOPolicy(self.cfg.max_speed, self.cfg.safety_radius)
-            log.info("Active Policy: VO Policy (tactical avoidance)")
-        else:
-            raise ValueError(f"unknown policy type: {self.cfg.policy}")
+        self.policy = create_policy(self.cfg)
+
+        log.info(f"Initialized Policies: {type(self.policy).__name__}")
+        if hasattr(self.policy, 'active'):
+            if self.policy.active is True:
+                log.info(f"VO safety wrapper is active")
+            else:
+                log.info(f"VO safety wrapper is disabled")
 
         # init fleet
         self.uavs = []

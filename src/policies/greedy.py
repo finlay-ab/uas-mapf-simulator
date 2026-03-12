@@ -1,4 +1,5 @@
 import numpy as np
+from src.physics import Velocity 
 from .base import MAPFPolicy
 
 class GreedyPolicy(MAPFPolicy):
@@ -11,7 +12,8 @@ class GreedyPolicy(MAPFPolicy):
 
         # if arrived at target
         if distance < 0.5:
-            return np.array([0.0, 0.0, 0.0])
+            return Velocity(0.0, 0.0)
         
-        velocity = (direction / distance) * self.max_speed
-        return velocity
+        vel_vector = (direction / distance) * self.max_speed
+        
+        return Velocity(vel_vector[0], vel_vector[1])
