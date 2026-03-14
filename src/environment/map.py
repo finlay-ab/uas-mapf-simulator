@@ -1,5 +1,9 @@
 import numpy as np
+import logging
 from enum import Enum, auto 
+
+# init logging
+log = logging.getLogger("UAS_Sim")
 
 # in order of severity 
 class AirspaceType(Enum):
@@ -7,6 +11,12 @@ class AirspaceType(Enum):
     RESTRICTED = auto()
     PROHIBITED = auto()
     OBSTACLE = auto()
+
+class Depot:
+    def __init__(self, depot_id, x, y):
+        self.id = depot_id
+        self.x = x
+        self.y = y
 
 class GridMap:
     def __init__(self, width, height, resolution=1.0, potential_field=False, potential_strength=10.0, file=None):
@@ -18,13 +28,23 @@ class GridMap:
 
         # initilize grids
         self.grid = np.zeros((self.grid_width, self.grid_height), dtype=int)
+        
+        # initilize weight map
         self.weighted_grid = np.ones((self.grid_width, self.grid_height), dtype=float)
 
-        # load obstacles and restricted areas
+        # store depots
+        self.depots = []
+        self.depot_counter = 0
+
+        # load obstacles and restricted areas and depots
         if file is not None:
             self.load_from_file(file)
 
-        # apply potential field if enabled
+        #if no file was given or file had no depots, make a default one
+        if len(self.depots) == 0:
+            log.warning("No depots found. Creating default depot at origin.")
+            self.add_depot(0, width/2, height/2)
+
         if self.potential_field:
             self.apply_potential_field(self.potential_strength)
 
@@ -45,8 +65,17 @@ class GridMap:
     def add_restricted_area(self, x_min, x_max, y_min, y_max):
         gx_min, gx_max, gy_min, gy_max = self.get_grid_indices(x_min, x_max, y_min, y_max)
         self.grid[gx_min:gx_max, gy_min:gy_max] = AirspaceType.RESTRICTED.value
-    
 
+    # adds a depot location
+    def add_depot(self, x_min, x_max, y_min, y_max):
+        # calculate center of the depot box
+        center_x = (x_min + x_max) / 2.0
+        center_y = (y_min + y_max) / 2.0
+        
+        new_depot = Depot(self.depot_counter, center_x, center_y)
+        self.depots.append(new_depot)
+        self.depot_counter += 1
+    
     def apply_potential_field(self, strength):
         # very inefficient but only runs once
         for x in range(self.grid_width):
@@ -60,26 +89,43 @@ class GridMap:
                                     self.weighted_grid[nx, ny] += (strength / dist)
 
     def load_from_file(self, file):
-        with open(file, 'r') as f:
-            for line in f:
-                parts = line.split()
-                if len(parts) != 5:
-                    continue
-                type_str, x_min, x_max, y_min, y_max = parts
-                x_min, x_max, y_min, y_max = map(float, [x_min, x_max, y_min, y_max])
-                if type_str == "OBSTACLE":
-                    self.add_obstacle(x_min, x_max, y_min, y_max)
-                elif type_str == "RESTRICTED":
-                    self.add_restricted_area(x_min, x_max, y_min, y_max)
+        try:
+            with open(file, 'r') as f:
+                for line in f:
+                    parts = line.split()
+                    if len(parts) != 5:
+                        continue
+                    type_str, x_min, x_max, y_min, y_max = parts
+                    x_min, x_max, y_min, y_max = map(float, [x_min, x_max, y_min, y_max])
+                    if type_str == "OBSTACLE":
+                        self.add_obstacle(x_min, x_max, y_min, y_max)
+                    elif type_str == "RESTRICTED":
+                        self.add_restricted_area(x_min, x_max, y_min, y_max)
+                    elif type_str == "DEPOT":
+                        self.add_depot(x_min, x_max, y_min, y_max)
+        except FileNotFoundError:
+            log.warning(f"Map file {file} not found. Proceeding with empty map.")
 
     def evaluate_footprint(self, gx, gy, radius):
+        # Convert physical coordinates to grid indices
+        cx = int(gx / self.resolution)
+        cy = int(gy / self.resolution)
         grid_rad = int(np.ceil(radius / self.resolution))
         worst = AirspaceType.OPEN.value
-
-        for nx in range(gx - grid_rad, gx + grid_rad + 1):
-            for ny in range(gy - grid_rad, gy + grid_rad + 1):
+        
+        for nx in range(cx - grid_rad, cx + grid_rad + 1):
+            for ny in range(cy - grid_rad, cy + grid_rad + 1):
                 if 0 <= nx < self.grid_width and 0 <= ny < self.grid_height:
                     worst = max(worst, self.grid[nx, ny])
                 else:
                     worst = max(worst, AirspaceType.PROHIBITED.value) 
         return worst
+
+    # safely fetch a depot location for drones to start at
+    def get_depot_spawn(self, index=0):
+        if len(self.depots) == 0:
+            return 0.0, 0.0
+        
+        # use modulo so if you have 10 drones and 2 depots, they alternate safely
+        depot = self.depots[index % len(self.depots)]
+        return depot.x, depot.y

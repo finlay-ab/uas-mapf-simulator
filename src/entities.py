@@ -19,7 +19,7 @@ class UAVState(Enum):
 
 # UAV entity which stores state and jobs
 class UAV:
-    def __init__(self, env, id, depot_pos, spartial_manager, metrics, policy, job_queue, dt=0.5):
+    def __init__(self, env, id, depot_pos, spatial_manager, metrics, policy, job_queue, dt=0.5, grid_map=None):
         # set vars
         self.env = env
         self.uav_id = id
@@ -27,11 +27,12 @@ class UAV:
         self.pos = np.array(depot_pos, dtype=float)
         self.vel = Velocity(0.0, 0.0)
 
-        self.sm = spartial_manager
+        self.sm = spatial_manager
         self.metrics = metrics
         self.policy = policy
         self.job_queue = job_queue
         self.dt = dt
+        self.grid_map = grid_map
         
         # start at depot
         self.state = UAVState.IDLE_DEPOT
