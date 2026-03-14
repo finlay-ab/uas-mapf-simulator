@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from src.environment import SpatialManager
+from environment.spatial import SpatialManager
 from src.metrics import Metrics
 
 class TestSafety(unittest.TestCase):
