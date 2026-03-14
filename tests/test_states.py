@@ -3,7 +3,7 @@ import simpy
 import numpy as np
 from src.entities import UAV, UAVState
 from src.metrics import Metrics
-from src.environment import SpatialManager 
+from environment.spatial import SpatialManager 
 from src.physics import Velocity
 
 class TestStates(unittest.TestCase):
