@@ -5,8 +5,12 @@ import numpy as np
 
 from src.entities import UAV
 from src.metrics import Metrics
-from src.environment import SpatialManager
+
 from src.policies.factory import create_policy
+
+from src.environment.map import GridMap
+from src.environment.environment import SpatialManager
+
 
 # logging
 log = logging.getLogger("UAS_Sim")
@@ -30,6 +34,7 @@ class Simulation:
         # create env
         self.env = simpy.Environment()
         self.job_queue = simpy.Store(self.env)
+        self.map = GridMap(self.cfg.map_width, self.cfg.map_height, potential_field=self.cfg.potential_field, potential_strength=self.cfg.potential_strength, file=self.cfg.file)
         
         # init 
         self.sm = SpatialManager(self.cfg.safety_radius)
@@ -75,7 +80,7 @@ class Simulation:
             
             job = {
                 'id': job_count,
-                'goal': [random.uniform(0, self.cfg.size), random.uniform(0, self.cfg.size)]
+                'goal': [random.uniform(0, self.cfg.map_width), random.uniform(0, self.cfg.map_height)]
             }
             log.info(f"[{self.env.now:4.1f}] Job {job_count} requested.")
             self.job_queue.put(job)
