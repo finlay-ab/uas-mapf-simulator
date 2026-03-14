@@ -11,7 +11,7 @@ class SimConfig:
     map_height: int = 400
     potential_field: bool = True
     potential_strength: float = 10.0
-    file: str = "environment/obstacles.txt"
+    file: str = "src/environment/obstacles.txt"
    
     # job gen rate
     lambda_rate: float = 1/12   # poisson rate (approx 1 job per 12s)
