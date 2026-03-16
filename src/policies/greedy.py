@@ -1,6 +1,7 @@
 import numpy as np
+
 from src.physics import Velocity 
-from .base import MAPFPolicy
+from src.policies.base import MAPFPolicy
 
 class GreedyPolicy(MAPFPolicy):
     def __init__(self, max_speed):

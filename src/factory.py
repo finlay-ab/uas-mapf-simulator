@@ -1,5 +1,5 @@
-from .greedy import GreedyPolicy
-from .vo_wrapper import VOWrapper
+from src.policies import *
+from src.wrappers import *
 
 def create_policy(config):
     # greedy as a base policy

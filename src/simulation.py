@@ -6,7 +6,7 @@ import numpy as np
 from src.entities import UAV
 from src.metrics import Metrics
 
-from src.policies.factory import create_policy
+from factory import create_policy
 
 from src.environment.map import GridMap, AirspaceType
 from src.environment.spatial import SpatialManager
