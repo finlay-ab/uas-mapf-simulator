@@ -24,7 +24,7 @@ class SimConfig:
 
     # policy and wrapper
     policy: PolicyType = PolicyType.GREEDY
-    wrapper: WrapperType = WrapperType.VO
+    wrapper: WrapperType = WrapperType.NONE
 
     # path recovery 
     path_recovery_strategy: PathRecoveryStrategy = PathRecoveryStrategy.RETURN_TO_NEXT_WP
