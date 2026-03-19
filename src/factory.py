@@ -8,7 +8,12 @@ def create_planner(config, grid_map):
     if config.policy == PolicyType.GREEDY:
         base_planner = GreedyPolicy(grid_map, config.max_speed, config.safety_radius)
     elif config.policy == PolicyType.ASTAR:
-        base_planner = AStarPolicy(grid_map)
+        base_planner = AStarPolicy(
+            grid_map,
+            config.max_speed,
+            config.safety_radius,
+            connectivity=config.connectivity,
+        )
     elif config.policy == PolicyType.DSTAR:
         base_planner = DStarPolicy(grid_map)
     elif config.policy == PolicyType.DYNAMIC_ASTAR:
