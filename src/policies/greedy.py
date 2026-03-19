@@ -11,3 +11,20 @@ class GreedyPolicy(MAPFPolicy):
         start_array = np.array(start, dtype=float)
         goal_array = np.array(goal, dtype=float)
         return [start_array, goal_array]
+
+    def get_velocity(self, name, pos, target, spatial_manager):
+        del name
+        del spatial_manager
+
+        pos_array = np.array(pos, dtype=float)
+        target_array = np.array(target, dtype=float)
+        direction = target_array - pos_array
+        distance = np.linalg.norm(direction)
+
+        if distance < 0.01:
+            return Velocity(0.0, 0.0)
+
+        unit_direction = direction / distance
+        speed = min(self.max_speed, distance)
+        velocity = unit_direction * speed
+        return Velocity(float(velocity[0]), float(velocity[1]))
