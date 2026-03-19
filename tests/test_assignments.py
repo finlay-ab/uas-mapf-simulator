@@ -2,6 +2,7 @@ import unittest
 import simpy
 from src.entities import UAV
 from src.metrics import Metrics
+from src.config import SimConfig
 
 
 # silences logging
@@ -21,7 +22,7 @@ class TestAssignments(unittest.TestCase):
         job_queue.put({'id': 1, 'goal': [10, 10]})
         
         # init uav
-        uav = UAV(env, "UAV_0", [0,0], None, met, None, job_queue)
+        uav = UAV(env, "UAV_0", [0,0], None, met, None, job_queue, SimConfig())
         
         env.run(until=0.1) 
 
@@ -35,7 +36,7 @@ class TestAssignments(unittest.TestCase):
         env = simpy.Environment()
         met = Metrics()
         job_queue = simpy.Store(env)
-        uav = UAV(env, "UAV_0", [0,0], None, met, None, job_queue)
+        uav = UAV(env, "UAV_0", [0,0], None, met, None, job_queue, SimConfig())
         
         # give job
         uav.current_job = {'id': 99, 'goal': [0,0]}

@@ -7,7 +7,7 @@ class TestPhysics(unittest.TestCase):
     
     def test_speed_limit(self):
         max_speed = 5.0
-        pol = GreedyPolicy(max_speed)
+        pol = GreedyPolicy(None, max_speed)
         
         pos = np.array([0.0, 0.0])
         goal = np.array([100.0, 100.0])
@@ -24,7 +24,7 @@ class TestPhysics(unittest.TestCase):
     def test_zero_velocity_at_goal(self):
         # drone should stop when it arrives
         max_speed = 5.0
-        pol = GreedyPolicy(max_speed)
+        pol = GreedyPolicy(None, max_speed)
         
         # pos and goal are exactly the same
         pos = np.array([50.0, 50.0])

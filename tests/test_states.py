@@ -3,8 +3,9 @@ import simpy
 import numpy as np
 from src.entities import UAV, UAVState
 from src.metrics import Metrics
-from environment.spatial import SpatialManager 
+from src.environment.spatial import SpatialManager 
 from src.physics import Velocity
+from src.config import SimConfig
 
 class TestStates(unittest.TestCase):
 
@@ -18,10 +19,13 @@ class TestStates(unittest.TestCase):
         job_queue.put({'id': 1, 'goal': np.array([5, 5])})
         
         class MockPolicy:
+            def plan_path(self, start, goal):
+                return [np.array(start, dtype=float), np.array(goal, dtype=float)]
+
             def get_velocity(self, id, pos, goal, sm):
                 return Velocity(1.0, 1.0)
 
-        uav = UAV(env, "UAV_0", [0,0], sm, met, MockPolicy(), job_queue)
+        uav = UAV(env, "UAV_0", [0,0], sm, met, MockPolicy(), job_queue, SimConfig())
         state_history = []
 
         def observer():

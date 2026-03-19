@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 from src.physics import Velocity
 from src.policies.greedy import GreedyPolicy
-from src.policies.vo_wrapper import VOWrapper
+from src.wrappers.vo_wrapper import VOWrapper
 
 class MockSpatialManager:
     def __init__(self, position_map, velocity_map):
@@ -12,7 +12,7 @@ class MockSpatialManager:
 class TestVOWrapper(unittest.TestCase):
 
     def test_perfect_head_on_collision(self):
-        base_policy = GreedyPolicy(5.0)
+        base_policy = GreedyPolicy(None, 5.0)
         wrapper = VOWrapper(base_policy, safety_radius=2.5, active=True)
         
         # set up head on collision
@@ -31,7 +31,7 @@ class TestVOWrapper(unittest.TestCase):
         self.assertGreater(abs(command_velocity.vy), 0.1, "FAIL: symmetry breaker failed on dead-on collision")
 
     def test_offset_head_on(self):
-        base_policy = GreedyPolicy(5.0)
+        base_policy = GreedyPolicy(None, 5.0)
         wrapper = VOWrapper(base_policy, safety_radius=2.5, active=True)
         
         # set up offset
@@ -51,7 +51,7 @@ class TestVOWrapper(unittest.TestCase):
 
     def test_stationary_avoidance(self):
         # the broken drone scenario: obstacle is not moving
-        base_policy = GreedyPolicy(5.0)
+        base_policy = GreedyPolicy(None, 5.0)
         wrapper = VOWrapper(base_policy, safety_radius=2.5, active=True)
         
         # set up stationary obstacle
