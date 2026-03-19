@@ -1,7 +1,7 @@
 
 import simpy
 import random
-from simple_sim import Metrics, drone
+from src.simple_sim import Metrics, drone
 
 def test_single_job_completes():
     random.seed(42) 
@@ -11,7 +11,7 @@ def test_single_job_completes():
     metrics = Metrics()
 
     # give constant flight time for test
-    import simple_sim as s
+    import src.simple_sim as s
     s.FLIGHT_TIME = (10, 10)
 
     # start one drone

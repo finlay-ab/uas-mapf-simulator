@@ -1,19 +1,22 @@
 import numpy as np
 
+from src.physics import Velocity
+
+# abstract base class for MAPF policies
 class MAPFPolicy:
-    # abstract base class for MAPF policies
-    def plan_paths(self, name, pos, target, spatial_manager):
-        raise NotImplementedError("This method should be overridden by a subclasses")
+    def __init__(self, grid_map, max_speed=5.0, safety_radius=1.0, drone_radius=0.5):
+        self.grid_map = grid_map
+        self.max_speed = max_speed
+        self.safety_radius = safety_radius
+        self.drone_radius = drone_radius
 
-class PolicyWrapper(MAPFPolicy):
-    # abstract class for joining policies
-    def __init__(self, base_policy: MAPFPolicy, active:bool=True):
-        self.base_policy = base_policy
-        self.active = active
+    def plan_path(self, start, goal):
+        raise NotImplementedError("planners must implement the plan_path method")
 
-    def set_active(self, is_active:bool):
-        self.active = is_active
+    # used to replan when off path 
+    def plan_path_to_waypoint(self, start, goal):
+        return self.plan_path(start, goal)
 
-    def get_velocity(self, name, pos, target, spartial_manager):
-        return self.base_policy.get_velocity(name, pos, target, spartial_manager)
     
+    def get_velocity(self, name, pos, target, spatial_manager):
+        raise NotImplementedError("planners must implement the get_velocity method")

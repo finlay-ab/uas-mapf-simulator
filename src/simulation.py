@@ -6,7 +6,7 @@ import numpy as np
 from src.entities import UAV
 from src.metrics import Metrics
 
-from src.policies.factory import create_policy
+from src.factory import create_planner
 
 from src.environment.map import GridMap, AirspaceType
 from src.environment.spatial import SpatialManager
@@ -47,12 +47,12 @@ class Simulation:
         self.sm = SpatialManager(self.cfg.safety_radius)
         self.metrics = Metrics() 
         
-        # get policy
-        self.policy = create_policy(self.cfg)
+        # get planner
+        self.planner = create_planner(self.cfg, self.map)
 
-        log.info(f"Initialized Policies: {type(self.policy).__name__}")
-        if hasattr(self.policy, 'active'):
-            if self.policy.active is True:
+        log.info(f"Initialized Planner: {type(self.planner).__name__}")
+        if hasattr(self.planner, 'active'):
+            if self.planner.active is True:
                 log.info("VO safety wrapper is active")
             else:
                 log.info("VO safety wrapper is disabled")
@@ -67,10 +67,11 @@ class Simulation:
                 env=self.env,
                 id=f"UAV_{i}",
                 depot_pos=[start_x, start_y],
-                spatial_manager=self.sm, 
+                spatial_manager=self.sm,
                 metrics=self.metrics,
-                policy=self.policy,
+                policy=self.planner,
                 job_queue=self.job_queue,
+                cfg=self.cfg,
                 dt=self.cfg.dt,
                 grid_map=self.map
             )

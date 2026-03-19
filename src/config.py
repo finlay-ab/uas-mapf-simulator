@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from src.schemas import PolicyType, WrapperType, PathRecoveryStrategy, PathRecoveryAction
 
 @dataclass
 class SimConfig:
@@ -20,11 +21,24 @@ class SimConfig:
     fleet_size: int = 4         # number of UAV
     max_speed: float = 5.0      # max UAV speed [m/s]
     safety_radius: float = 2.5  # collision avoidance radius [m]
-    
-    # policy vars
-    policy: str = "vo"          
-    use_vo = True
-    
+
+    # policy and wrapper
+    policy: PolicyType = PolicyType.GREEDY
+    wrapper: WrapperType = WrapperType.NONE
+
+    # path recovery 
+    path_recovery_strategy: PathRecoveryStrategy = PathRecoveryStrategy.RETURN_TO_NEXT_WP
+    path_recovery_action: PathRecoveryAction = PathRecoveryAction.RETURN_TO_PATH
+
+    off_path_threshold: float = 3.0     # distance (m) from path to trigger recovery
+    off_path_check_interval: int = 2    # how many time steps before checking
+    max_recovery_attempts: int = 5      # how many attempts before giving up and replanning
+
+    # stuck UAV detection and recovery
+    hover_timeout: float = 10.0                              
+    job_timeout: float = 300.0                               
+    max_waypoint_skips: int = 3                              
+
     # out
     log_file: str = "simulation.log"
     csv_file: str = "run_results.csv"
