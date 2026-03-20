@@ -17,11 +17,11 @@ class PolicyWrapper(MAPFPolicy):
     def set_active(self, is_active:bool):
         self.active = is_active
 
-    def plan_path(self, start, goal):
-        return self.base_policy.plan_path(start, goal)
+    def plan_path(self, start, goal, spatial_manager=None):
+        return self.base_policy.plan_path(start, goal, spatial_manager)
 
-    def plan_path_to_waypoint(self, start, goal):
-        return self.base_policy.plan_path_to_waypoint(start, goal)
+    def plan_path_to_waypoint(self, start, goal, spatial_manager=None):
+        return self.base_policy.plan_path_to_waypoint(start, goal, spatial_manager)
 
     def get_velocity(self, name, pos, target, spatial_manager):
         return self.base_policy.get_velocity(name, pos, target, spatial_manager)

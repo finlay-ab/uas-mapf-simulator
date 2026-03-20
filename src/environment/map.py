@@ -42,8 +42,11 @@ class GridMap:
 
         #if no file was given or file had no depots, make a default one
         if len(self.depots) == 0:
-            log.warning("No depots found. Creating default depot at origin.")
-            self.add_depot(0, width/2, height/2)
+            log.warning("No depots found.")
+            half_size = min(5.0, width / 2.0, height / 2.0)
+            cx = width / 2.0
+            cy = height / 2.0
+            self.add_depot(cx - half_size, cx + half_size, cy - half_size, cy + half_size)
 
         if self.potential_field:
             self.apply_potential_field(self.potential_strength)
@@ -54,8 +57,27 @@ class GridMap:
         gx_max = min(self.grid_width, int(np.ceil(x_max / self.resolution)))
         gy_min = max(0, int(y_min / self.resolution))
         gy_max = min(self.grid_height, int(np.ceil(y_max / self.resolution)))
-        
+
         return gx_min, gx_max, gy_min, gy_max
+
+    def world_to_grid_point(self, x, y, clamp=True):
+        gx = int(float(x) / self.resolution)
+        gy = int(float(y) / self.resolution)
+
+        if clamp:
+            gx = min(max(gx, 0), self.grid_width - 1)
+            gy = min(max(gy, 0), self.grid_height - 1)
+
+        return gx, gy
+
+    def grid_to_world_point(self, gx, gy, center=True):
+        gx = int(gx)
+        gy = int(gy)
+        offset = 0.5 if center else 0.0
+        return (
+            (gx + offset) * self.resolution,
+            (gy + offset) * self.resolution,
+        )
 
     # makes rect obstacle in grid
     def add_obstacle(self, x_min, x_max, y_min, y_max):
@@ -120,6 +142,33 @@ class GridMap:
                 else:
                     worst = max(worst, AirspaceType.PROHIBITED.value) 
         return worst
+
+    def is_traversable(self, gx, gy, drone_radius):
+        if not (0 <= gx < self.grid_width and 0 <= gy < self.grid_height):
+            return False
+
+        x, y = self.grid_to_world_point(gx, gy, center=True)
+        status = self.evaluate_footprint(x, y, drone_radius)
+        return status < AirspaceType.RESTRICTED.value
+
+    def get_neighbors(self, gx, gy, drone_radius, connectivity=4):
+        cardinal = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+        for dx, dy in cardinal:
+            nxt_gx, nxt_gy = gx + dx, gy + dy
+            if self.is_traversable(nxt_gx, nxt_gy, drone_radius):
+                yield (nxt_gx, nxt_gy)
+
+        if connectivity == 8:
+            diagonal = [(1, 1), (1, -1), (-1, 1), (-1, -1)]
+            for dx, dy in diagonal:
+                nxt_gx, nxt_gy = gx + dx, gy + dy
+                if not self.is_traversable(nxt_gx, nxt_gy, drone_radius):
+                    continue
+
+                side_a = self.is_traversable(gx + dx, gy, drone_radius)
+                side_b = self.is_traversable(gx, gy + dy, drone_radius)
+                if side_a and side_b:
+                    yield (nxt_gx, nxt_gy)
 
     # safely fetch a depot location for drones to start at
     def get_depot_spawn(self, index=0):

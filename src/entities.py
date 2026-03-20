@@ -225,7 +225,7 @@ class UAV:
         if self.path_index < len(self.current_path):
             destination = self.current_path[-1] 
             try:
-                replanned = self.policy.plan_path(self.pos, destination)
+                replanned = self.policy.plan_path(self.pos, destination, self.sm)
                 self.current_path = replanned
                 self.path_index = 0
                 self.hover_start_time = None
@@ -274,7 +274,7 @@ class UAV:
     def execute_flight(self, destination):
         # plan path
         destination_array = np.array(destination, dtype=float)
-        self.current_path = self.policy.plan_path(self.pos, destination_array)
+        self.current_path = self.policy.plan_path(self.pos, destination_array, self.sm)
         self.path_index = 0
         self.job_start_time = self.env.now
         self.skipped_waypoints = 0
@@ -336,7 +336,7 @@ class UAV:
                             elif recovery_action == PathRecoveryAction.REPLAN:
                                 if self.path_index + 1 < len(self.current_path):
                                     replanned = self.policy.plan_path_to_waypoint(
-                                        self.pos, self.current_path[self.path_index + 1]
+                                        self.pos, self.current_path[self.path_index + 1], self.sm
                                     )
                                     self.current_path[self.path_index:] = replanned[:-1] + self.current_path[self.path_index + 1:]
 
