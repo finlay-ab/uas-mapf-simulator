@@ -19,7 +19,7 @@ class TestStates(unittest.TestCase):
         job_queue.put({'id': 1, 'goal': np.array([5, 5])})
         
         class MockPolicy:
-            def plan_path(self, start, goal):
+            def plan_path(self, start, goal, spatial_manager=None):
                 return [np.array(start, dtype=float), np.array(goal, dtype=float)]
 
             def get_velocity(self, id, pos, goal, sm):
