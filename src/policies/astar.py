@@ -43,7 +43,7 @@ class AStarPolicy(MAPFPolicy):
         return path
 
     # plan path
-    def plan_path(self, start, goal):
+    def plan_path(self, start, goal, spatial_manager=None):
         start_array = np.array(start, dtype=float)
         goal_array = np.array(goal, dtype=float)
 

@@ -42,8 +42,11 @@ class GridMap:
 
         #if no file was given or file had no depots, make a default one
         if len(self.depots) == 0:
-            log.warning("No depots found. Creating default depot at origin.")
-            self.add_depot(0, width/2, height/2)
+            log.warning("No depots found.")
+            half_size = min(5.0, width / 2.0, height / 2.0)
+            cx = width / 2.0
+            cy = height / 2.0
+            self.add_depot(cx - half_size, cx + half_size, cy - half_size, cy + half_size)
 
         if self.potential_field:
             self.apply_potential_field(self.potential_strength)

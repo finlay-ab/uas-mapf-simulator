@@ -17,7 +17,12 @@ def create_planner(config, grid_map):
     elif config.policy == PolicyType.DSTAR:
         base_planner = DStarPolicy(grid_map)
     elif config.policy == PolicyType.DYNAMIC_ASTAR:
-        base_planner = DynamicAStarPolicy(grid_map)
+        base_planner = DynamicAStarPolicy(
+            grid_map,
+            config.max_speed,
+            config.safety_radius,
+            connectivity=config.connectivity,
+        )
     else:
         raise ValueError(f"unknown policy type: {config.policy}")
 

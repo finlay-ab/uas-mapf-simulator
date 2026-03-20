@@ -10,12 +10,12 @@ class MAPFPolicy:
         self.safety_radius = safety_radius
         self.drone_radius = drone_radius
 
-    def plan_path(self, start, goal):
+    def plan_path(self, start, goal, spatial_manager=None):
         raise NotImplementedError("planners must implement the plan_path method")
 
     # used to replan when off path 
-    def plan_path_to_waypoint(self, start, goal):
-        return self.plan_path(start, goal)
+    def plan_path_to_waypoint(self, start, goal, spatial_manager=None):
+        return self.plan_path(start, goal, spatial_manager)
 
     
     def get_velocity(self, name, pos, target, spatial_manager):
