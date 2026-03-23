@@ -51,3 +51,37 @@ class TestStates(unittest.TestCase):
                 state_history.index(UAVState.LANDING),
                 "UAV reached LANDING state before TAKEOFF state."
             )
+
+    def test_takeoff_waits_for_clearance(self):
+        env = simpy.Environment()
+        met = Metrics()
+        sm = SpatialManager(safety_radius=2.5)
+        job_queue = simpy.Store(env)
+        job_queue.put({'id': 1, 'goal': np.array([5, 5])})
+
+        class MockPolicy:
+            def plan_path(self, start, goal, spatial_manager=None):
+                return [np.array(start, dtype=float), np.array(goal, dtype=float)]
+
+            def get_velocity(self, id, pos, goal, sm):
+                return Velocity(1.0, 1.0)
+
+        cfg = SimConfig(depot_operation_radius=5.0, depot_check_interval=0.5)
+        uav = UAV(env, "UAV_0", [0, 0], sm, met, MockPolicy(), job_queue, cfg)
+
+        # active traffic starts close to depot, then clears later
+        sm.update("UAV_blocker", np.array([1.0, 0.0]), Velocity(0.0, 0.0), UAVState.EN_ROUTE)
+
+        def clear_blocker_later():
+            yield env.timeout(1.5)
+            sm.update("UAV_blocker", np.array([100.0, 100.0]), Velocity(0.0, 0.0), UAVState.EN_ROUTE)
+
+        env.process(clear_blocker_later())
+
+        # still blocked during early sim time
+        env.run(until=1.0)
+        self.assertEqual(uav.state, UAVState.TAKEOFF)
+
+        # after blocker clears + takeoff timeout, UAV should be airborne
+        env.run(until=4.5)
+        self.assertIn(uav.state, [UAVState.EN_ROUTE, UAVState.HOVER_WAIT, UAVState.DELIVERING, UAVState.RETURNING])
