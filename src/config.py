@@ -23,7 +23,7 @@ class SimConfig:
     safety_radius: float = 2.5  # collision avoidance radius [m]
 
     # policy and wrapper
-    policy: PolicyType = PolicyType.OCCUPANCY_ASTAR
+    policy: PolicyType = PolicyType.DSTAR
     wrapper: WrapperType = WrapperType.NONE
     connectivity: int = 4
 
