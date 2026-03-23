@@ -16,8 +16,8 @@ def create_planner(config, grid_map):
         )
     elif config.policy == PolicyType.DSTAR:
         base_planner = DStarPolicy(grid_map)
-    elif config.policy == PolicyType.DYNAMIC_ASTAR:
-        base_planner = DynamicAStarPolicy(
+    elif config.policy == PolicyType.OCCUPANCY_ASTAR:
+        base_planner = OccupancyAStarPolicy(
             grid_map,
             config.max_speed,
             config.safety_radius,

@@ -4,7 +4,7 @@ class PolicyType(Enum):
     GREEDY = auto()
     ASTAR = auto()
     DSTAR = auto()
-    DYNAMIC_ASTAR = auto()
+    OCCUPANCY_ASTAR = auto()
 
 class WrapperType(Enum):
     NONE = auto()
