@@ -40,6 +40,10 @@ class SimConfig:
     job_timeout: float = 300.0                               
     max_waypoint_skips: int = 3                              
 
+    # takeoff and landing
+    depot_operation_radius: float = 5.0
+    depot_check_interval: float = 0.5
+
     # out
     log_file: str = "simulation.log"
     csv_file: str = "run_results.csv"

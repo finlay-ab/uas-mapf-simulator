@@ -57,13 +57,48 @@ class UAV:
         self.job_start_time = None     
 
         # start process
+        # give state to sm
+        if self.sm is not None:
+            self.sm.update(self.uav_id, self.pos, self.vel, self.state)
         self.action = env.process(self.run())
+
+    def wait_for_depot_clearance(self, phase):
+        # check for spartial manager
+        if self.sm is None:
+            return
+
+        # reserve space and wait for clearance
+        while True:
+            reserved = self.sm.reserve_ground_zone(self.uav_id, self.depot)
+            clear = self.sm.is_takeoff_landing_clear(
+                self.uav_id,
+                self.depot,
+                self.cfg.depot_operation_radius
+            )
+
+            # update sm to reeflect waiting state 
+            self.sm.update(self.uav_id, self.pos, self.vel, self.state)
+
+            # procceed
+            if reserved and clear:
+                return
+
+            # cancel reservation to prevent deadlock with take offs
+            if reserved and not clear:
+                self.sm.release_ground_zone(self.uav_id)
+
+            # log and wait before checking again
+            log.info(f"[{self.env.now:4.1f}] {self.uav_id} waiting for {phase} clearance.")
+            yield self.env.timeout(self.cfg.depot_check_interval)
 
     def run(self):
         # UAV loop
         while True:
             # idle at depot (waiting for job)
             self.state = UAVState.IDLE_DEPOT
+            if self.sm is not None:
+                self.vel = Velocity(0.0, 0.0)
+                self.sm.update(self.uav_id, self.pos, self.vel, self.state)
             self.current_job = yield self.job_queue.get()
             target = np.array(self.current_job['goal'], dtype=float)
             
@@ -71,7 +106,11 @@ class UAV:
 
             # takeoff phase (2s timeout to simulate takeoff)
             self.state = UAVState.TAKEOFF
+            self.vel = Velocity(0.0, 0.0)
+            yield from self.wait_for_depot_clearance("takeoff")
             yield self.env.timeout(2.0) 
+            if self.sm is not None:
+                self.sm.release_ground_zone(self.uav_id)
 
             # en_route to target
             start_delivery = self.env.now
@@ -94,7 +133,11 @@ class UAV:
             
             # landing phase (2s timeout to simulate landing)
             self.state = UAVState.LANDING
+            self.vel = Velocity(0.0, 0.0)
+            yield from self.wait_for_depot_clearance("landing")
             yield self.env.timeout(2.0)
+            if self.sm is not None:
+                self.sm.release_ground_zone(self.uav_id)
             log.info(f"[{self.env.now:4.1f}] {self.uav_id} recovered at depot.")
 
             # clear job
@@ -373,5 +416,6 @@ class UAV:
 
         # arrived at final wp
         self.vel = Velocity(0.0, 0.0)
-        self.sm.update(self.uav_id, self.pos, self.vel, self.state)
+        if self.sm is not None:
+            self.sm.update(self.uav_id, self.pos, self.vel, self.state)
         self.job_start_time = None
