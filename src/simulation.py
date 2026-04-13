@@ -10,6 +10,7 @@ from src.factory import create_planner
 
 from src.environment.map import GridMap, AirspaceType
 from src.environment.spatial import SpatialManager
+from src.environment.airspace import Airspace
 
 # logging
 log = logging.getLogger("UAS_Sim")
@@ -34,21 +35,27 @@ class Simulation:
         self.env = simpy.Environment()
         self.job_queue = simpy.Store(self.env)
         
-        # init map
-        self.map = GridMap(
-            self.cfg.map_width, 
-            self.cfg.map_height, 
-            potential_field=self.cfg.potential_field, 
-            potential_strength=self.cfg.potential_strength, 
-            file=self.cfg.file
-        )
-        
-        # init spatial manager
+        # init airspace
+        # create tempory airpsace config
+        airspace_config = {
+            'id': 'main_airspace',
+            'map_width': self.cfg.map_width,
+            'map_height': self.cfg.map_height,
+            'resolution': 1.0,
+            'potential_field': self.cfg.potential_field,
+            'potential_strength': self.cfg.potential_strength,
+            'file': self.cfg.file,
+            'origin': [0.0, 0.0]
+        }
+
         self.sm = SpatialManager(self.cfg.safety_radius)
-        self.metrics = Metrics() 
+        self.airspace = Airspace(airspace_config, self.sm)
+        
+        # get metrics 
+        self.metrics = Metrics()
         
         # get planner
-        self.planner = create_planner(self.cfg, self.map)
+        self.planner = create_planner(self.cfg, self.airspace.map)
 
         log.info(f"Initialized Planner: {type(self.planner).__name__}")
         if hasattr(self.planner, 'active'):
@@ -61,7 +68,7 @@ class Simulation:
         self.uavs = []
         for i in range(self.cfg.fleet_size):
             # fetch the exact spawn coordinates from the map's depots
-            start_x, start_y = self.map.get_depot_spawn(i)
+            start_x, start_y = self.airspace.map.get_depot_spawn(i)
             
             uav = UAV(
                 env=self.env,
@@ -73,7 +80,7 @@ class Simulation:
                 job_queue=self.job_queue,
                 cfg=self.cfg,
                 dt=self.cfg.dt,
-                grid_map=self.map
+                grid_map=self.airspace.map
             )
             self.uavs.append(uav)
             
@@ -97,7 +104,7 @@ class Simulation:
                 gy = random.uniform(0, self.cfg.map_height)
 
                 # varify safe
-                if self.map.evaluate_footprint(gx, gy, 0.5) < AirspaceType.PROHIBITED.value:
+                if self.airspace.map.evaluate_footprint(gx, gy, 0.5) < AirspaceType.PROHIBITED.value:
                     valid_location = True
 
             job = {

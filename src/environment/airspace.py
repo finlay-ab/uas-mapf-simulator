@@ -1,10 +1,10 @@
-from environment.map import Map
+from src.environment.map import GridMap
 import numpy as np
 
 class Airspace:
     def __init__(self, config, spatial_manager, uavs=None):
         self.id = config['id']
-        self.map = Map( np.array(config['size'], dtype=float), config['resolution'], config.get('potential_field', False), config.get('potential_strength', 10.0), config.get('file', None))
+        self.map = GridMap(config['map_width'], config['map_height'], config.get('potential_field', False), config.get('potential_strength', 10.0), config.get('file', None))
         self.spatial_manager = spatial_manager
         self.origin = np.array(config.get('origin', [0.0, 0.0]), dtype=float)
 
