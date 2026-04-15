@@ -1,0 +1,37 @@
+{
+  "width": 400,
+  "height": 400,
+  "resolution": 1.0,
+  "potential_field": true,
+  "potential_strength": 10,
+  "depots": [
+    {
+      "id": "main",
+      "x": 20,
+      "y": 20,   
+      "num_drones": 4
+    },
+    {
+      "id": "secondary",
+      "x": 350,
+      "y": 350,
+      "num_drones": 2
+    }
+  ],
+  "obstacles": [
+    {
+      "type": "obstacle",
+      "x1": 50,
+      "y1": 50,
+      "x2": 100,
+      "y2": 100
+    },
+    {
+      "type": "restricted",
+      "x1": 200,
+      "y1": 200,
+      "x2": 250,
+      "y2": 250
+    }
+  ]
+}

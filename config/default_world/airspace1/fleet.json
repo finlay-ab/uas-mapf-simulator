@@ -1,0 +1,9 @@
+{
+  "depots": [
+    { "id": "main", "num_drones": 4 },
+    { "id": "secondary", "num_drones": 2 }
+  ],
+  "defaults": {
+    "num_drones": 0
+  }
+}
