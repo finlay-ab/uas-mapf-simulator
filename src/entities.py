@@ -2,6 +2,7 @@ from enum import auto, Enum
 import numpy as np
 import simpy
 import logging
+import json
 from .physics import Velocity
 from .environment.map import AirspaceType
 from .schemas import PathRecoveryStrategy, PathRecoveryAction
@@ -21,24 +22,33 @@ class UAVState(Enum):
 
 # UAV entity which stores state and jobs
 class UAV:
-    def __init__(self, env, id, depot_pos, spatial_manager, metrics, policy, job_queue, cfg, dt=0.5, grid_map=None):
-        # set vars
-        if cfg is None:
-            raise ValueError("cfg is required when constructing UAV")
-
+    def __init__(self, env, uav_id, depot_owner_id, policy, job_queue, uav_config_file, grid_map, sm, cfg):
+        
+        # set input vars
         self.env = env
-        self.uav_id = id
-        self.depot = np.array(depot_pos, dtype=float)
-        self.pos = np.array(depot_pos, dtype=float)
-        self.vel = Velocity(0.0, 0.0)
+        self.uav_id = uav_id
+        self.depot_owner_id = depot_owner_id
+        self.cfg = cfg
 
-        self.sm = spatial_manager
-        self.metrics = metrics
+        self.depot = grid_map.get_depot_position(depot_owner_id)
+
         self.policy = policy
         self.job_queue = job_queue
-        self.dt = dt
+
+        # open config file
+        with open("config/uavs/" + uav_config_file + ".json", 'r') as f:
+            self.uav_config = json.load(f)
+
         self.grid_map = grid_map
-        self.cfg = cfg
+        self.sm = sm
+        
+
+
+        # set uav vars
+        self.vel = Velocity(0.0, 0.0)
+
+        # get depot pos from grid map
+        self.pos = self.grid_map.get_depot_position(depot_owner_id)
 
         # start at depot
         self.state = UAVState.IDLE_DEPOT
@@ -52,9 +62,17 @@ class UAV:
         self.path_deviation_point = None # where UAV left the path
         self.recovery_attempts = 0 
         self.hover_start_time = None
-        self.last_valid_pos = np.array(depot_pos, dtype=float)
+        self.last_valid_pos = np.array(self.pos, dtype=float)
         self.skipped_waypoints = 0    
         self.job_start_time = None     
+
+        # temp 
+        depot_pos = self.grid_map.get_depot_position(depot_owner_id)
+        if depot_pos is None:
+            raise ValueError(f"Unknown depot id '{depot_owner_id}' for UAV {uav_id}")
+
+        self.depot = np.array(depot_pos, dtype=float)
+        self.pos = self.depot.copy()
 
         # start process
         # give state to sm

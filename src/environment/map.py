@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 import logging
 from enum import Enum, auto 
@@ -19,12 +21,17 @@ class Depot:
         self.y = y
 
 class GridMap:
-    def __init__(self, width, height, resolution=1.0, potential_field=False, potential_strength=10.0, file=None):
-        self.resolution = resolution
-        self.grid_width = int(np.ceil(width / self.resolution))
-        self.grid_height = int(np.ceil(height / self.resolution))
-        self.potential_field = potential_field
-        self.potential_strength = potential_strength
+    def __init__(self, map_file):
+        # load config
+        with open(map_file, 'r') as f:
+            map_data = json.load(f) 
+
+        # load map data 
+        self.resolution = map_data.get('resolution', 1.0)
+        self.grid_width = int(np.ceil(map_data.get('width', 100) / self.resolution))
+        self.grid_height = int(np.ceil(map_data.get('height', 100) / self.resolution))
+        self.potential_field = map_data.get('potential_field', True)
+        self.potential_strength = map_data.get('potential_strength', 10.0)
 
         # initilize grids
         self.grid = np.zeros((self.grid_width, self.grid_height), dtype=int)
@@ -36,20 +43,16 @@ class GridMap:
         self.depots = []
         self.depot_counter = 0
 
-        # load obstacles and restricted areas and depots
-        if file is not None:
-            self.load_from_file(file)
-
-        #if no file was given or file had no depots, make a default one
-        if len(self.depots) == 0:
-            log.warning("No depots found.")
-            half_size = min(5.0, width / 2.0, height / 2.0)
-            cx = width / 2.0
-            cy = height / 2.0
-            self.add_depot(cx - half_size, cx + half_size, cy - half_size, cy + half_size)
+        # load obstacles and depots from config
+        self._load_from_config(map_data)
 
         if self.potential_field:
             self.apply_potential_field(self.potential_strength)
+
+        if 1 == 1:
+            # code to dispaly the map for debugging/ graphs
+            pass
+            
 
     # convert floating co-ordinates into grid co ordinates
     def get_grid_indices(self, x_min, x_max, y_min, y_max):
@@ -89,15 +92,10 @@ class GridMap:
         self.grid[gx_min:gx_max, gy_min:gy_max] = AirspaceType.RESTRICTED.value
 
     # adds a depot location
-    def add_depot(self, x_min, x_max, y_min, y_max):
-        # calculate center of the depot box
-        center_x = (x_min + x_max) / 2.0
-        center_y = (y_min + y_max) / 2.0
-        
-        new_depot = Depot(self.depot_counter, center_x, center_y)
+    def add_depot(self,depot_id, x, y):
+        new_depot = Depot(depot_id, x, y)
         self.depots.append(new_depot)
-        self.depot_counter += 1
-    
+        
     def apply_potential_field(self, strength):
         # very inefficient but only runs once
         for x in range(self.grid_width):
@@ -170,6 +168,16 @@ class GridMap:
                 if side_a and side_b:
                     yield (nxt_gx, nxt_gy)
 
+    def _load_from_config(self, map_data):
+        for obstacle in map_data.get('obstacles', []):
+            self.add_obstacle(obstacle['x_min'], obstacle['x_max'], obstacle['y_min'], obstacle['y_max'])
+        
+        for restricted in map_data.get('restricted_areas', []):
+            self.add_restricted_area(restricted['x_min'], restricted['x_max'], restricted['y_min'], restricted['y_max'])
+        
+        for depot in map_data.get('depots', []):
+            self.add_depot(depot['id'], depot['x'], depot['y'])
+
     # safely fetch a depot location for drones to start at
     def get_depot_spawn(self, index=0):
         if len(self.depots) == 0:
@@ -178,3 +186,9 @@ class GridMap:
         # use modulo so if you have 10 drones and 2 depots, they alternate safely
         depot = self.depots[index % len(self.depots)]
         return depot.x, depot.y
+
+    def get_depot_position(self, depot_id):
+        for depot in self.depots:
+            if depot.id == depot_id:
+                return depot.x, depot.y
+        return None

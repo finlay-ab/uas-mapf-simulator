@@ -3,20 +3,20 @@ from src.wrappers import *
 from src.schemas import PolicyType, WrapperType
 
 
-def create_planner(config, grid_map):
+def create_planner(config):
     # define policy based on config
     if config.policy == PolicyType.GREEDY:
-        base_planner = GreedyPolicy(grid_map, config.max_speed, config.safety_radius)
+        base_planner = GreedyPolicy(None, config.max_speed, config.safety_radius)
     elif config.policy == PolicyType.ASTAR:
         base_planner = AStarPolicy(
-            grid_map,
+            None,
             config.max_speed,
             config.safety_radius,
             connectivity=config.connectivity,
         )
     elif config.policy == PolicyType.DSTAR:
         base_planner = DStarPolicy(
-            grid_map,
+            None,
             config.max_speed,
             config.safety_radius,
             connectivity=config.connectivity,
@@ -38,3 +38,11 @@ def create_planner(config, grid_map):
         return VOWrapper(base_planner, config.safety_radius, active=True)
     else:
         raise ValueError(f"unknown wrapper type: {config.wrapper}")
+
+
+    #    log.info(f"Initialized Planner: {type(self.planner).__name__}")
+    #    if hasattr(self.planner, 'active'):
+    #        if self.planner.active is True:
+    #            log.info("VO safety wrapper is active")
+    #        else:
+    #            log.info("VO safety wrapper is disabled")
