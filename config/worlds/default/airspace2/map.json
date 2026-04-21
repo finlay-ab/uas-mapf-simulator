@@ -1,0 +1,51 @@
+{
+  "width": 400,
+  "height": 400,
+  "resolution": 1.0,
+  "potential_field": true,
+  "potential_strength": 10,
+  "depots": [
+    {
+      "id": "main",
+      "x": 20,
+      "y": 20,   
+      "num_drones": 4
+    },
+    {
+      "id": "secondary",
+      "x": 350,
+      "y": 350,
+      "num_drones": 2
+    }
+  ],
+  "obstacles": [
+    {
+      "type": "obstacle",
+      "x_min": 50,
+      "y_min": 50,
+      "x_max": 100,
+      "y_max": 100
+    },
+    {
+      "type": "obstacle",
+      "x_min": 300,
+      "y_min": 300,
+      "x_max": 350,
+      "y_max": 350
+    },
+    {
+       "type": "obstacle",
+       "x_min": 150,
+       "y_min": 150,
+       "x_max": 200,
+       "y_max": 200
+    },
+    {
+      "type": "restricted",
+      "x_min": 200,
+      "y_min": 200,
+      "x_max": 250,
+      "y_max": 250
+    }
+  ]
+}
