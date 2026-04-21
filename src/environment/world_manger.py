@@ -3,11 +3,10 @@ from src.environment.airspace import Airspace
 from src.environment.map import GridMap
 
 class WorldManager:
-    def __init__(self, config, env, policy, job_queue):
+    def __init__(self, config, env, policy):
         self.config = config
         self.env = env
         self.policy = policy
-        self.job_queue = job_queue
         self.airspaces = {}
         self.graph = {}
         
@@ -31,12 +30,12 @@ class WorldManager:
             fleet_file = airspace['fleet_file']
             
             # create airspace and store in dict
-            self.airspaces[airspace_id] = Airspace(airspace_id, config_file, map_file, fleet_file, self.env, self.policy, self.job_queue, self.config)
+            self.airspaces[airspace_id] = Airspace(airspace_id, config_file, map_file, fleet_file, self.env, self.policy, self.config, world_manager=self)
     
     def _create_graph(self):
         for airspace_id in self.airspaces.keys():
             self.graph[airspace_id] = [] 
-    
+
     def get_airspace(self, airspace_id):
         return self.airspaces.get(airspace_id, None)
     

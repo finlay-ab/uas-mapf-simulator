@@ -186,9 +186,13 @@ class GridMap:
         # use modulo so if you have 10 drones and 2 depots, they alternate safely
         depot = self.depots[index % len(self.depots)]
         return depot.x, depot.y
-
+    
     def get_depot_position(self, depot_id):
         for depot in self.depots:
             if depot.id == depot_id:
-                return depot.x, depot.y
-        return None
+                # return np arr
+                return np.array([depot.x, depot.y], dtype=float)
+            
+        log.warning(f"Depot with id {depot_id} not found. Returning (0,0).")
+        return 0.0, 0.0
+            
