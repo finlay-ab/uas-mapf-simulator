@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum, auto
 
 import numpy as np
+from src.physics import Velocity, GlobalPosition, LocalPosition, GridPosition
 
 class PolicyType(Enum):
     GREEDY = auto()
@@ -45,3 +46,14 @@ class Job:
     job_start_time: float = None
     job_end_time: float = None
 
+# in order of severity 
+class AirspaceType(Enum):
+    OPEN = 0
+    RESTRICTED = auto()
+    PROHIBITED = auto()
+    OBSTACLE = auto()
+
+@dataclass(frozen=True)
+class Depot:
+    id: int
+    grid_position: GridPosition

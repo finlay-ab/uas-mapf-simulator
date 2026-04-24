@@ -7,6 +7,8 @@ from .physics import Velocity
 from .environment.map import AirspaceType
 from .schemas import PathRecoveryStrategy, PathRecoveryAction
 
+from src.physics import GlobalPosition, LocalPosition
+
 # get log
 log = logging.getLogger("UAS_Sim")
 
@@ -22,7 +24,7 @@ class UAVState(Enum):
 
 # UAV entity which stores state and jobs
 class UAV:
-    def __init__(self, env, uav_id, depot_owner_id, policy, job_queue, uav_config_file, grid_map, sm, cfg):
+    def __init__(self, env, uav_id, depot_owner_id, policy, job_queue, uav_config_file, grid_map, sm, cfg, airspace):
         # set input vars
         self.env = env
         self.uav_id = uav_id
@@ -48,8 +50,8 @@ class UAV:
         self.current_job = None
 
         # start at depot
-        self.depot_pos = self.grid_map.get_depot_position(depot_owner_id)
-        self.pos = np.array(self.depot_pos, dtype=float)
+        self.depot_pos = airspace.local_to_world(self.grid_map.get_depot_position(depot_owner_id))
+        self.pos = self.depot_pos
         self.state = UAVState.IDLE_DEPOT
 
         # path planning

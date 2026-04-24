@@ -7,6 +7,7 @@ from src.environment.spatial import SpatialManager
 import numpy as np
 
 from src.schemas import Job, JobStatus
+from src.physics import GlobalPosition, LocalPosition
 import simpy
 import logging
 
@@ -16,7 +17,7 @@ class Airspace:
     def __init__(self, airspace_id, config_file, map_file, fleet_file, env, policy,cfg, world_manager):
         self.id = airspace_id
         self.config = self._load_config(config_file)
-        self.origin = np.array(self.config.get('origin', [0.0, 0.0]), dtype=float)
+        self.origin = GlobalPosition(*self.config.get('origin', [0.0, 0.0]))
         self.job_spawn_rate = self.config.get('job_spawn_rate', 1.0)
 
         self.env = env
@@ -41,7 +42,7 @@ class Airspace:
 
         # for each depots job queue start a generator that creates jobs for that depot
         for depot in self.map.depots:
-            self.env.process(self.job_generator(depot.id))
+            self.env.process(self._job_generator(depot.id))
 
 
     def _load_config(self, config_file):
@@ -76,7 +77,8 @@ class Airspace:
                             depot_x['type'], 
                             self.map, 
                             self.spatial_manager,
-                            self.cfg
+                            self.cfg,
+                            airspace=self
 
                             ))
                         break
@@ -86,7 +88,7 @@ class Airspace:
         # return fleet data
         return fleet
 
-    def job_generator(self, depot_id):
+    def _job_generator(self, depot_id):
         log.info(f"Starting job generator for depot {depot_id} in airspace {self.id} with spawn rate {self.job_spawn_rate}.")
         while True:
             # wait poisson interarrival time
@@ -117,15 +119,26 @@ class Airspace:
 
             yield self.job_queues[depot_id].put(job)
            
-    def world_to_local(self, position):
-        return (position - self.origin) / self.map.resolution
+    def local_to_world(self, local_position: LocalPosition) -> GlobalPosition:
+        return GlobalPosition(
+            local_position.x * self.map.resolution + self.origin.x,
+            local_position.y * self.map.resolution + self.origin.y,
+        )
 
-    def local_to_world(self, grid_position):
-        return grid_position * self.map.resolution + self.origin
-
+    def world_to_local(self, global_position: GlobalPosition) -> LocalPosition:
+        return LocalPosition(
+            (global_position.x - self.origin.x) / self.map.resolution,
+            (global_position.y - self.origin.y) / self.map.resolution,
+        )
+    
     def is_inside(self, position):
-        local_pos = self.world_to_local(position)
-        return (0 <= local_pos[0] < self.map.grid_width) and (0 <= local_pos[1] < self.map.grid_height)
+        if isinstance(position, GlobalPosition):
+            position = self.world_to_local(position)
+        
+        if not isinstance(position, LocalPosition):
+            raise TypeError("position must be GlobalPosition or LocalPosition")
+        
+        return self.map.in_bounds(position)
 
     def add_uav(self, uav):
         self.uavs.append(uav)   
