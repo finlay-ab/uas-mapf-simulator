@@ -1,0 +1,100 @@
+{
+  "id": "default_map",
+  "width": 400,
+  "height": 400,
+  "resolution": 1.0,
+  "potential_field": true,
+  "potential_strength": 10,
+  "depots": [
+    {
+      "id": "main",
+      "x": 20,
+      "y": 20,   
+      "num_drones": 4
+    },
+    {
+      "id": "secondary",
+      "x": 350,
+      "y": 350,
+      "num_drones": 2
+    }
+  ],
+  "obstacles": [
+    {
+      "type": "obstacle",
+      "x_min": 50,
+      "y_min": 50,
+      "x_max": 100,
+      "y_max": 100
+    },
+    {
+      "type": "restricted",
+      "x_min": 200,
+      "y_min": 200,
+      "x_max": 250,
+      "y_max": 250
+    },
+    {
+      "type": "obstacle",
+      "x_min": 150,
+      "y_min": 20,
+      "x_max": 180,
+      "y_max": 160
+    },
+    {
+      "type": "restricted",
+      "x_min": 280,
+      "y_min": 80,
+      "x_max": 350,
+      "y_max": 130
+    },
+    {
+      "type": "obstacle",
+      "x_min": 60,
+      "y_min": 260,
+      "x_max": 220,
+      "y_max": 290
+    },
+    {
+      "type": "restricted",
+      "x_min": 20,
+      "y_min": 150,
+      "x_max": 80,
+      "y_max": 190
+    },
+    {
+      "type": "obstacle",
+      "x_min": 280,
+      "y_min": 280,
+      "x_max": 310,
+      "y_max": 380
+    },
+    {
+      "type": "obstacle",
+      "x_min": 120,
+      "y_min": 330,
+      "x_max": 250,
+      "y_max": 360
+    }
+  ],
+  "gates": [
+  {
+    "id": "a1_out_to_a2",
+    "x": 399,
+    "y": 150,
+    "airspace_id": "airspace1",
+    "target_airspace_id": "airspace2",
+    "target_gate_id": "a2_in_from_a1",
+    "capacity": 1
+  },
+  {
+    "id": "a1_in_from_a2",
+    "x": 399,
+    "y": 300,
+    "airspace_id": "airspace1",
+    "target_airspace_id": "airspace2",
+    "target_gate_id": "a2_out_to_a1",
+    "capacity": 1
+  }
+]
+}

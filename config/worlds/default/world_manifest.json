@@ -1,0 +1,31 @@
+{
+  "airspaces": [
+    {
+      "id": "airspace1",
+      "config_file": "config/worlds/default/airspace1/config.json",
+      "map_file": "config/worlds/default/airspace1/map.json",
+      "fleet_file": "config/worlds/default/airspace1/fleet.json"
+    },
+    {
+      "id": "airspace2",
+      "config_file": "config/worlds/default/airspace2/config.json",
+      "map_file": "config/worlds/default/airspace2/map.json",
+      "fleet_file": "config/worlds/default/airspace2/fleet.json"
+    }
+    
+  ],
+  "connections": [
+  {
+    "from_airspace": "airspace1",
+    "from_gate_id": "a1_out_to_a2",
+    "to_airspace": "airspace2",
+    "to_gate_id": "a2_in_from_a1"
+  },
+  {
+    "from_airspace": "airspace2",
+    "from_gate_id": "a2_out_to_a1",
+    "to_airspace": "airspace1",
+    "to_gate_id": "a1_in_from_a2"
+  }
+  ]
+}
