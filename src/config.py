@@ -13,6 +13,8 @@ class SimConfig:
     potential_field: bool = True
     potential_strength: float = 10.0
     file: str = "src/environment/obstacles.txt"
+
+    world_config: str = "config/worlds/default/world_manifest.json"
    
     # job gen rate
     lambda_rate: float = 1/12   # poisson rate (approx 1 job per 12s)
@@ -23,7 +25,7 @@ class SimConfig:
     safety_radius: float = 2.5  # collision avoidance radius [m]
 
     # policy and wrapper
-    policy: PolicyType = PolicyType.DSTAR
+    policy: PolicyType = PolicyType.GREEDY
     wrapper: WrapperType = WrapperType.NONE
     connectivity: int = 4
 

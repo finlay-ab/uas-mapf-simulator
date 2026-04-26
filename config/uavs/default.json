@@ -1,0 +1,36 @@
+{
+	"id": "default_uav",
+
+	"mass_kg": 8.5,
+	"payload_kg": 2.0,
+	"body_radius_m": 0.5,
+
+	"max_speed_mps": 5.0,
+	"cruise_speed_mps": 4.0,
+	"acceleration_mps2": 1.5,
+	"turn_radius_m": 2.5,
+
+	"battery_capacity_wh": 220.0,
+	"flight_drain_w": 180.0,
+	"hover_drain_w": 90.0,
+	"takeoff_drain_wh": 3.0,
+	"landing_drain_wh": 3.0,
+	"reserve_battery_wh": 20.0,
+
+	"takeoff_time_s": 2.0,
+	"landing_time_s": 2.0,
+	"delivery_time_s": 3.0,
+	"charge_time_s": 30.0,
+
+	"depot_operation_radius": 5.0,
+	"depot_check_interval": 0.5,
+	"hover_timeout": 10.0,
+	"job_timeout": 300.0,
+
+	"path_recovery_strategy": "RETURN_TO_NEXT_WP",
+	"path_recovery_action": "RETURN_TO_PATH",
+	"off_path_threshold": 3.0,
+	"off_path_check_interval": 2,
+	"max_recovery_attempts": 5,
+	"max_waypoint_skips": 3
+}
