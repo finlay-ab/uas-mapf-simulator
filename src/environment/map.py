@@ -6,7 +6,7 @@ import logging
 from enum import Enum, auto 
 
 from src.physics import LocalPosition, GridPosition
-from src.schemas import AirspaceType, Depot
+from src.schemas import AirspaceType, Depot, Gate
 
 
 # init logging
@@ -21,6 +21,7 @@ class GridMap:
             map_data = json.load(f) 
 
         # load map data 
+        self.id = map_data.get('id', 'no_id')
         self.resolution = map_data.get('resolution', 1.0)
         self.grid_width = int(np.ceil(map_data.get('width', 100) / self.resolution))
         self.grid_height = int(np.ceil(map_data.get('height', 100) / self.resolution))
@@ -37,6 +38,9 @@ class GridMap:
         self.depots = []
         self.depot_counter = 0
 
+        # store gates
+        self.gates = []
+
         # load obstacles and depots from config
         self._load_from_config(map_data)
 
@@ -51,9 +55,6 @@ class GridMap:
         gy_max = min(self.grid_height, int(np.ceil(y_max / self.resolution)))
 
         return gx_min, gx_max, gy_min, gy_max
-
-
-
 
 
     # makes rect obstacle in grid
@@ -76,6 +77,17 @@ class GridMap:
         new_depot = Depot(depot_id, position)
         self.depots.append(new_depot)
         
+    # add gate to grid
+    def add_gate(self, gate_id, position, airspace_id, target_airspace_id, target_gate_id, capacity):
+        if isinstance(position, LocalPosition):
+            position = self.local_to_grid(position)
+        
+        if not isinstance(position, GridPosition):
+            raise TypeError("position must be LocalPosition or GridPosition")
+        
+        new_gate = Gate(gate_id, position, airspace_id, target_airspace_id, target_gate_id, capacity)
+        self.gates.append(new_gate)
+
     def apply_potential_field(self, strength):
         # very inefficient but only runs once
         for x in range(self.grid_width):
@@ -99,6 +111,10 @@ class GridMap:
             position = LocalPosition(depot['x'], depot['y'])
             self.add_depot(depot['id'], position)
     
+        for gate in map_data.get('gates', []):
+            position = LocalPosition(gate['x'], gate['y'])
+            self.add_gate(gate['id'], position, gate['airspace_id'], gate['target_airspace_id'], gate['target_gate_id'], gate['capacity'])
+
     def get_depot_position(self, depot_id) -> LocalPosition:
         for depot in self.depots:
             if depot.id == depot_id:
@@ -199,3 +215,5 @@ class GridMap:
                 if self.is_in_bounds(side_a) and self.is_in_bounds(side_b):
                     if self.is_traversable(side_a, drone_radius) and self.is_traversable(side_b, drone_radius):
                         yield nxt_pos
+
+  

@@ -40,7 +40,7 @@ class Job:
     origin_airspace: str
     origin_depot: str
     destination_airspace: str
-    target_pos: np.ndarray
+    target_pos: GlobalPosition
     status: JobStatus = JobStatus.PENDING   
     job_creation_time: float = None
     job_start_time: float = None
@@ -57,3 +57,28 @@ class AirspaceType(Enum):
 class Depot:
     id: int
     grid_position: GridPosition
+
+class WayPointType(Enum):
+    EN_ROUTE = auto()
+    TAKEOFF = auto()
+    HANDOVER_OUT = auto()
+    HANDOVER_IN = auto()
+    DELIVERY = auto()
+    LANDING = auto()
+
+@dataclass()
+class Waypoint:
+    position: GlobalPosition
+    type: WayPointType 
+    airspace_id: str
+    gate_id: str = None
+    depot_id: str = None
+
+@dataclass()
+class Gate:
+    id: str
+    position: GridPosition
+    airspace_id: str
+    target_airspace_id: str
+    target_gate_id: str
+    capacity: int

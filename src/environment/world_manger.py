@@ -1,6 +1,9 @@
 import json
 from src.environment.airspace import Airspace
 from src.environment.map import GridMap
+from src.physics import GlobalPosition, LocalPosition
+from src.entities import UAV
+from src.schemas import Waypoint, WayPointType
 
 class WorldManager:
     def __init__(self, config, env, policy):
@@ -15,7 +18,8 @@ class WorldManager:
         
         # create graph
         self._create_graph()
-    
+
+        
     def _load_airspaces(self):
         # read json
         with open(self.config.world_config, 'r') as f:
@@ -41,3 +45,79 @@ class WorldManager:
     
     def get_all_airspaces(self):
         return self.airspaces
+
+    def get_path(self, start_airspace_id, end_airspace_id, current_pos: GlobalPosition, target_pos: GlobalPosition) -> list[Waypoint]:
+        # for now assume airspaces must be adjacent and return direct path along with rturn back to start
+        waypoints = []
+
+        if not (start_airspace_id in self.airspaces and end_airspace_id in self.airspaces):
+             return None
+        
+        # append start 
+        waypoints.append(Waypoint(current_pos, WayPointType.TAKEOFF, start_airspace_id))
+
+        if start_airspace_id != end_airspace_id:
+            # handover out
+            gate_out = self.airspaces[start_airspace_id].map.get_gate_to_airspace(end_airspace_id)
+            if gate_out is None:
+                raise ValueError(f"No gate from {start_airspace_id} to {end_airspace_id}")
+
+            # convert grid to global position
+            gate_out_local_pos = self.airspaces[start_airspace_id].map.grid_to_local(gate_out.position)
+            gate_out_pos = self.airspaces[start_airspace_id].local_to_world(gate_out_local_pos)
+
+            # append gate 
+            waypoints.append(Waypoint(gate_out_pos, WayPointType.HANDOVER_OUT, start_airspace_id, gate_id=gate_out.id))
+
+            # get target gate
+            gate_in = self.airspaces[end_airspace_id].map.get_gate(gate_out.target_gate_id)
+            if gate_in is None:
+                raise ValueError(f"No gate with id {gate_out.target_gate_id} in airspace {end_airspace_id}")
+            gate_in_local_pos = self.airspaces[end_airspace_id].map.grid_to_local(gate_in.position)
+            gate_in_pos = self.airspaces[end_airspace_id].local_to_world(gate_in_local_pos)
+            # append gate in
+            waypoints.append(Waypoint(gate_in_pos, WayPointType.HANDOVER_IN, end_airspace_id, gate_id=gate_in.id))
+
+
+        # append end
+        waypoints.append(Waypoint(target_pos, WayPointType.DELIVERY, end_airspace_id))
+
+        # start return trip
+
+        if start_airspace_id != end_airspace_id:
+            # get return gate
+            return_gate_out = self.airspaces[end_airspace_id].map.get_gate_to_airspace(start_airspace_id)
+            if return_gate_out is None:
+                raise ValueError(f"No gate from {end_airspace_id} to {start_airspace_id}")
+            return_gate_out_local_pos = self.airspaces[end_airspace_id].map.grid_to_local(return_gate_out.position)
+            return_gate_out_pos = self.airspaces[end_airspace_id].local_to_world(return_gate_out_local_pos)
+            # append gate
+            waypoints.append(Waypoint(return_gate_out_pos, WayPointType.HANDOVER_OUT, end_airspace_id, gate_id=return_gate_out.id))
+
+            # get return gate in
+            return_gate_in = self.airspaces[start_airspace_id].map.get_gate(return_gate_out.target_gate_id)
+            if return_gate_in is None:
+                raise ValueError(f"No gate with id {return_gate_out.target_gate_id} in airspace {start_airspace_id}")
+            return_gate_in_local_pos = self.airspaces[start_airspace_id].map.grid_to_local(return_gate_in.position)
+            return_gate_in_pos = self.airspaces[start_airspace_id].local_to_world(return_gate_in_local_pos)
+            # append gate in
+            waypoints.append(Waypoint(return_gate_in_pos, WayPointType.HANDOVER_IN, start_airspace_id, gate_id=return_gate_in.id))
+
+        # append landing 
+        waypoints.append(Waypoint(current_pos, WayPointType.LANDING, start_airspace_id))
+
+        return waypoints
+
+    # self.world_manager.complete_handover(from_airspace_id, to_airspace_id, uav_id)
+    def complete_handover(self, from_airspace_id, to_airspace_id, uav_id):
+        uav = self.get_airspace(from_airspace_id).get_uav(uav_id)
+        if uav is None:
+            raise ValueError(f"UAV {uav_id} not found in airspace {from_airspace_id}")
+        
+        # remove from old airspace
+        self.get_airspace(from_airspace_id).remove_uav(uav)
+
+        # add to new airspace
+        self.get_airspace(to_airspace_id).add_uav(uav)
+
+    
