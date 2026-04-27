@@ -113,11 +113,18 @@ class WorldManager:
         uav = self.get_airspace(from_airspace_id).get_uav(uav_id)
         if uav is None:
             raise ValueError(f"UAV {uav_id} not found in airspace {from_airspace_id}")
+
+        to_airspace = self.get_airspace(to_airspace_id)
+        if to_airspace is None:
+            raise ValueError(f"Airspace {to_airspace_id} not found")
         
         # remove from old airspace
         self.get_airspace(from_airspace_id).remove_uav(uav)
 
         # add to new airspace
-        self.get_airspace(to_airspace_id).add_uav(uav)
+        to_airspace.add_uav(uav)
+
+        # update uav airspace ref
+        uav.airspace = to_airspace
 
     

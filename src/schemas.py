@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum, auto
 
 import numpy as np
@@ -82,3 +82,4 @@ class Gate:
     target_airspace_id: str
     target_gate_id: str
     capacity: int
+    queue_positions: list[GridPosition] = field(default_factory=list)

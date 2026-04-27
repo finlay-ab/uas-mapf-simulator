@@ -1,11 +1,9 @@
 from enum import auto, Enum
 import numpy as np
-import simpy
 import logging
 import json
 from .physics import Velocity
-from .environment.map import AirspaceType
-from .schemas import PathRecoveryStrategy, PathRecoveryAction, Job, JobStatus, Depot, PolicyType, WrapperType, Waypoint, WayPointType
+from .schemas import JobStatus, WayPointType
 
 from src.physics import GlobalPosition, LocalPosition
 
@@ -122,10 +120,27 @@ class UAV:
 
         self.state = UAVState.TAKEOFF
 
-    # handle take off
+    # reserve a depot slot before departure
     def _takeoff(self):
+        depot_req = self.airspace.request_depot_slot(self.depot_owner_id)
+
+        while not depot_req.triggered:
+            depot_resource = self.airspace.depot_resources[self.depot_owner_id]
+            queue_rank = 0
+
+            if depot_req in depot_resource.queue:
+                queue_rank = depot_resource.queue.index(depot_req)
+
+            queue_hold_position = self.airspace.get_depot_queue_global_position_for_rank(self.depot_owner_id, queue_rank)
+            yield from self._fly_to_global(queue_hold_position)
+            yield self.env.timeout(self.cfg.depot_check_interval)
+
+        yield depot_req
+        yield from self._fly_to_global(self.depot_pos)
+
         # simulate takeoff time
         yield self.env.timeout(self.takeoff_time_s)
+        self.airspace.release_depot_slot(self.depot_owner_id, depot_req)
 
         # change state to en route
         self.state = UAVState.EN_ROUTE
@@ -178,12 +193,19 @@ class UAV:
         
         # check at wp
         if np.linalg.norm(np.array([self.pos.x - self.route[self.route_index].position.x, self.pos.y - self.route[self.route_index].position.y])) > 1.0:
-            print("UAV position: ({}, {}), delivery position: ({}, {})".format(self.pos.x, self.pos.y, self.route[self.route_index].position.x, self.route[self.route_index].position.y))  
-            print(type(self.pos), type(self.route[self.route_index].position)) 
+            log.info(
+                "uav %s delivery mismatch: pos=(%.1f, %.1f) target=(%.1f, %.1f)",
+                self.uav_id,
+                self.pos.x,
+                self.pos.y,
+                self.route[self.route_index].position.x,
+                self.route[self.route_index].position.y,
+            )
             raise ValueError("UAV is not at delivery waypoint position for delivering state")
 
         # simulate delivery time
         yield self.env.timeout(self.delivery_time_s)
+        log.info("uav %s completed delivery for job %s", self.uav_id, self.current_job.id)
 
         # update job status
         self.current_job.status = JobStatus.COMPLETED
@@ -193,12 +215,25 @@ class UAV:
         self.state = UAVState.EN_ROUTE
 
     def _landing(self):
-        # check position is at depot 
-        if np.linalg.norm(np.array([self.pos.x - self.depot_pos.x, self.pos.y - self.depot_pos.y])) > 1.0:
-            raise ValueError("UAV is not at depot position for landing")
+        depot_req = self.airspace.request_depot_slot(self.depot_owner_id)
+
+        while not depot_req.triggered:
+            depot_resource = self.airspace.depot_resources[self.depot_owner_id]
+            queue_rank = 0
+
+            if depot_req in depot_resource.queue:
+                queue_rank = depot_resource.queue.index(depot_req)
+
+            queue_hold_position = self.airspace.get_depot_queue_global_position_for_rank(self.depot_owner_id, queue_rank)
+            yield from self._fly_to_global(queue_hold_position)
+            yield self.env.timeout(self.cfg.depot_check_interval)
+
+        yield depot_req
+        yield from self._fly_to_global(self.depot_pos)
 
         # simulate landing time
         yield self.env.timeout(self.takeoff_time_s)
+        self.airspace.release_depot_slot(self.depot_owner_id, depot_req)
 
         self.current_job = None
         self.state = UAVState.IDLE_DEPOT
@@ -208,12 +243,16 @@ class UAV:
         if self.route[self.route_index].type != WayPointType.HANDOVER_OUT or self.route[self.route_index + 1].type != WayPointType.HANDOVER_IN:
             raise ValueError("invalid route for handover: current waypoint must be HANDOVER_OUT and next waypoint must be HANDOVER_IN")
 
-        # simulate handover time
-        yield self.env.timeout(self.handover_time_s)
-        self.airspace.complete_handover(self.route[self.route_index].airspace_id, self.route[self.route_index + 1].airspace_id, self.id)
+        out_wp = self.route[self.route_index]
+        in_wp = self.route[self.route_index + 1]
+        
+        # mvp: fixed handover duration
+        yield self.env.timeout(1)
+        self.airspace.complete_handover(out_wp.airspace_id, in_wp.airspace_id, self.uav_id)
 
         # update position to next wp
-        self.pos = self.route[self.route_index + 1].pos
+        self.pos = in_wp.position
+        print(f"UAV {self.uav_id} completed handover from airspace {out_wp.airspace_id} to airspace {in_wp.airspace_id} at time {self.env.now:.1f}s")
 
         # update state to en route and increment route index
         self.state = UAVState.EN_ROUTE
@@ -227,6 +266,14 @@ class UAV:
         
         # update position and velocity
         self.pos = self.airspace.local_to_world(target)
-        print("uav {} flew from ({}, {}) to ({}, {})".format(self.uav_id, start.x, start.y, target.x, target.y))
+        log.info("uav %s flew from (%.1f, %.1f) to (%.1f, %.1f)", self.uav_id, start.x, start.y, target.x, target.y)
         self.vel = Velocity(0.0, 0.0)
+
+    def _fly_to_global(self, target: GlobalPosition):
+        if np.linalg.norm(np.array([self.pos.x - target.x, self.pos.y - target.y])) <= 1.0:
+            return
+
+        local_start = self.airspace.world_to_local(self.pos)
+        local_target = self.airspace.world_to_local(target)
+        yield from self._execute_flight(local_start, local_target)
         

@@ -3,7 +3,6 @@ import json
 
 import numpy as np
 import logging
-from enum import Enum, auto 
 
 from src.physics import LocalPosition, GridPosition
 from src.schemas import AirspaceType, Depot, Gate
@@ -37,6 +36,8 @@ class GridMap:
         # store depots
         self.depots = []
         self.depot_counter = 0
+        self.depot_operation_capacities = {}
+        self.depot_queue_positions = {}
 
         # store gates
         self.gates = []
@@ -67,7 +68,7 @@ class GridMap:
         self.grid[gx_min:gx_max, gy_min:gy_max] = AirspaceType.RESTRICTED.value
 
     # adds a depot location
-    def add_depot(self,depot_id, position):
+    def add_depot(self, depot_id, position, operation_capacity=1, queue_positions=None):
         if isinstance(position, LocalPosition):
             position = self.local_to_grid(position)
         
@@ -76,16 +77,33 @@ class GridMap:
         
         new_depot = Depot(depot_id, position)
         self.depots.append(new_depot)
+
+        if queue_positions is None:
+            queue_positions = self._default_depot_queue_positions(position)
+
+        self.depot_operation_capacities[depot_id] = max(1, int(operation_capacity))
+        self.depot_queue_positions[depot_id] = queue_positions
         
     # add gate to grid
-    def add_gate(self, gate_id, position, airspace_id, target_airspace_id, target_gate_id, capacity):
+    def add_gate(self, gate_id, position, airspace_id, target_airspace_id, target_gate_id, capacity, queue_positions=None):
         if isinstance(position, LocalPosition):
             position = self.local_to_grid(position)
         
         if not isinstance(position, GridPosition):
             raise TypeError("position must be LocalPosition or GridPosition")
         
-        new_gate = Gate(gate_id, position, airspace_id, target_airspace_id, target_gate_id, capacity)
+        if queue_positions is None:
+            queue_positions = self._default_gate_queue_positions(position)
+
+        new_gate = Gate(
+            gate_id,
+            position,
+            airspace_id,
+            target_airspace_id,
+            target_gate_id,
+            capacity,
+            queue_positions=queue_positions,
+        )
         self.gates.append(new_gate)
 
     def apply_potential_field(self, strength):
@@ -109,11 +127,32 @@ class GridMap:
         
         for depot in map_data.get('depots', []):
             position = LocalPosition(depot['x'], depot['y'])
-            self.add_depot(depot['id'], position)
+            queue_positions = []
+            for q_pos in depot.get('queue_positions', []):
+                queue_positions.append(self.local_to_grid(LocalPosition(q_pos['x'], q_pos['y'])))
+
+            self.add_depot(
+                depot['id'],
+                position,
+                operation_capacity=depot.get('operation_capacity', 1),
+                queue_positions=queue_positions or None,
+            )
     
         for gate in map_data.get('gates', []):
             position = LocalPosition(gate['x'], gate['y'])
-            self.add_gate(gate['id'], position, gate['airspace_id'], gate['target_airspace_id'], gate['target_gate_id'], gate['capacity'])
+            queue_positions = []
+            for q_pos in gate.get('queue_positions', []):
+                queue_positions.append(self.local_to_grid(LocalPosition(q_pos['x'], q_pos['y'])))
+
+            self.add_gate(
+                gate['id'],
+                position,
+                gate['airspace_id'],
+                gate['target_airspace_id'],
+                gate['target_gate_id'],
+                gate['capacity'],
+                queue_positions=queue_positions or None,
+            )
 
     def get_depot_position(self, depot_id) -> LocalPosition:
         for depot in self.depots:
@@ -212,8 +251,71 @@ class GridMap:
                 side_a = GridPosition(gx + dx, gy)
                 side_b = GridPosition(gx, gy + dy)
 
-                if self.is_in_bounds(side_a) and self.is_in_bounds(side_b):
+                if self.in_bounds(side_a) and self.in_bounds(side_b):
                     if self.is_traversable(side_a, drone_radius) and self.is_traversable(side_b, drone_radius):
                         yield nxt_pos
+
+    def _default_gate_queue_positions(self, gate_pos: GridPosition, slots: int = 4):
+        queue_positions = []
+
+        if gate_pos.gx <= 0:
+            direction = (1, 0)
+        elif gate_pos.gx >= self.grid_width - 1:
+            direction = (-1, 0)
+        elif gate_pos.gy <= 0:
+            direction = (0, 1)
+        elif gate_pos.gy >= self.grid_height - 1:
+            direction = (0, -1)
+        else:
+            direction = (-1, 0)
+
+        for idx in range(1, slots + 1):
+            q_pos = GridPosition(
+                gate_pos.gx + direction[0] * idx,
+                gate_pos.gy + direction[1] * idx,
+            )
+            if self.in_bounds(q_pos):
+                queue_positions.append(q_pos)
+
+        return queue_positions
+
+    def _default_depot_queue_positions(self, depot_pos: GridPosition, slots: int = 4):
+        queue_positions = []
+        offsets = [(-1, 0), (0, -1), (1, 0), (0, 1)]
+
+        for dx, dy in offsets[:slots]:
+            q_pos = GridPosition(depot_pos.gx + dx, depot_pos.gy + dy)
+            if self.in_bounds(q_pos):
+                queue_positions.append(q_pos)
+
+        return queue_positions
+
+    def get_gate(self, gate_id):
+        for gate in self.gates:
+            if gate.id == gate_id:
+                return gate
+        return None
+
+    def get_gate_to_airspace(self, target_airspace_id):
+        for gate in self.gates:
+            if gate.target_airspace_id == target_airspace_id:
+                return gate
+        return None
+
+    def get_gate_queue_positions(self, gate_id):
+        gate = self.get_gate(gate_id)
+        if gate is None:
+            raise ValueError(f"Gate with id {gate_id} not found.")
+        return list(gate.queue_positions)
+
+    def get_depot_operation_capacity(self, depot_id):
+        if depot_id not in self.depot_operation_capacities:
+            raise ValueError(f"Depot with id {depot_id} not found.")
+        return self.depot_operation_capacities[depot_id]
+
+    def get_depot_queue_positions(self, depot_id):
+        if depot_id not in self.depot_queue_positions:
+            raise ValueError(f"Depot with id {depot_id} not found.")
+        return list(self.depot_queue_positions[depot_id])
 
   
