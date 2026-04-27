@@ -10,13 +10,43 @@
       "id": "main",
       "x": 20,
       "y": 20,   
-      "num_drones": 4
+      "num_drones": 4,
+      "operation_capacity": 1,
+      "queue_positions": [
+        {
+          "x": 19,
+          "y": 20
+        },
+        {
+          "x": 20,
+          "y": 19
+        },
+        {
+          "x": 18,
+          "y": 20
+        }
+      ]
     },
     {
       "id": "secondary",
       "x": 350,
       "y": 350,
-      "num_drones": 2
+      "num_drones": 2,
+      "operation_capacity": 1,
+      "queue_positions": [
+        {
+          "x": 349,
+          "y": 350
+        },
+        {
+          "x": 350,
+          "y": 349
+        },
+        {
+          "x": 348,
+          "y": 350
+        }
+      ]
     }
   ],
   "obstacles": [
@@ -85,7 +115,21 @@
     "airspace_id": "airspace1",
     "target_airspace_id": "airspace2",
     "target_gate_id": "a2_in_from_a1",
-    "capacity": 1
+    "capacity": 1,
+    "queue_positions": [
+      {
+        "x": 398,
+        "y": 150
+      },
+      {
+        "x": 397,
+        "y": 150
+      },
+      {
+        "x": 396,
+        "y": 150
+      }
+    ]
   },
   {
     "id": "a1_in_from_a2",
@@ -94,7 +138,21 @@
     "airspace_id": "airspace1",
     "target_airspace_id": "airspace2",
     "target_gate_id": "a2_out_to_a1",
-    "capacity": 1
+    "capacity": 1,
+    "queue_positions": [
+      {
+        "x": 398,
+        "y": 300
+      },
+      {
+        "x": 397,
+        "y": 300
+      },
+      {
+        "x": 396,
+        "y": 300
+      }
+    ]
   }
 ]
 }
