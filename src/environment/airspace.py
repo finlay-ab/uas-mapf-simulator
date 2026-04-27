@@ -14,7 +14,7 @@ import logging
 log = logging.getLogger("UAS_Sim")  
 
 class Airspace:
-    def __init__(self, airspace_id, config_file, map_file, fleet_file, env, policy,cfg, world_manager):
+    def __init__(self, airspace_id, config_file, map_file, fleet_file, env, policy, cfg, world_manager):
         self.id = airspace_id
         self.config = self._load_config(config_file)
         self.origin = GlobalPosition(*self.config.get('origin', [0.0, 0.0]))
@@ -33,6 +33,11 @@ class Airspace:
         # create a job queue for each depot and store in dict in airspaces
         for depot in self.map.depots:
             self.job_queues[depot.id] = simpy.Store(self.env)
+
+        self.depot_resources = {}
+        for depot in self.map.depots:
+            depot_capacity = self.map.get_depot_operation_capacity(depot.id)
+            self.depot_resources[depot.id] = simpy.Resource(self.env, capacity=depot_capacity)
 
         # set gate capacity
         self.gate_resources = {}
@@ -67,18 +72,18 @@ class Airspace:
 
         fleet = []
 
-        for depot_x in fleet_data['depots']:
-            for x in range(depot_x  ['num_uavs']):
-                # find depot in map that matches depot_id
-                for depot_y in self.map.depots:
-                    if depot_y.id == depot_x['id']:
+        for depot_cfg in fleet_data['depots']:
+            for i in range(depot_cfg['num_uavs']):
+                # find matching depot in map
+                for depot in self.map.depots:
+                    if depot.id == depot_cfg['id']:
                         fleet.append(UAV(
                             self.env, 
-                            depot_x['id'] + str(len(fleet)), # uav id 
-                            depot_y.id, 
+                            depot_cfg['id'] + str(len(fleet)), # uav id 
+                            depot.id, 
                             self.policy, 
-                            self.job_queues[depot_y.id], 
-                            depot_x['type'], 
+                            self.job_queues[depot.id], 
+                            depot_cfg['type'], 
                             self.map, 
                             self.spatial_manager,
                             self.cfg,
@@ -98,17 +103,28 @@ class Airspace:
             # wait poisson interarrival time
             yield self.env.timeout(random.expovariate(self.cfg.lambda_rate/ len(self.map.depots)))
 
-            # pick airspace  
-            destination_airspace = self.world_manager.get_airspace(self.id).id
+            # default target to same airspace
+            destination_airspace = self.id
 
-            # get random dropoff location in same airspace for now just random x,y in map bounds
-            # random self.map.grid_height, self.map.grid_width
-            x = random.randrange(self.map.grid_width)
-            y = random.randrange(self.map.grid_height)  
+            # pick different airspace at job swpan rate probabilty
+            if random.random() < self.job_spawn_rate:
+                other_airspaces = [
+                    a for a in self.world_manager.get_all_airspaces().values()
+                    if a.id != self.id
+                ]
+                if other_airspaces:
+                    destination_airspace = random.choice(other_airspaces).id
 
-            # make np array and convert to world coordinates
+            destination_airspace_obj = self.world_manager.get_airspace(destination_airspace)
+            if destination_airspace_obj is None:
+                raise ValueError(f"Unknown destination airspace id: {destination_airspace}")
+
+            # random dropoff in destination airspace bounds
+            x = random.randrange(destination_airspace_obj.map.grid_width)
+            y = random.randrange(destination_airspace_obj.map.grid_height)
+
             destination = LocalPosition(x, y)
-            destination = self.local_to_world(destination)
+            destination = destination_airspace_obj.local_to_world(destination)
 
             # create job request and put in queue
             job = Job(
@@ -151,10 +167,10 @@ class Airspace:
         return None
 
     def add_uav(self, uav):
-        self.uavs.append(uav)   
+        self.fleet.append(uav)   
 
     def remove_uav(self, uav):
-        self.uavs.remove(uav)
+        self.fleet.remove(uav)
     
 
     def get_waypoints(self, current_position: GlobalPosition, goal_position: GlobalPosition, current_airspace_id, goal_airspace_id) -> list[Waypoint]:
@@ -191,9 +207,11 @@ class Airspace:
             
             if current_waypoint.airspace_id != self.id:
                 raise ValueError("current waypoint airspace {} does not match current airspace {}".format(current_waypoint.airspace_id, self.id))
+
+            if goal_waypoint.airspace_id == self.id:
+                raise ValueError("invalid handover: HANDOVER_IN waypoint must belong to a different airspace")
             
-            # raise error shouldve been handled earlier
-            raise ValueError("invalid handover: current waypoint is HANDOVER_OUT but goal waypoint is not HANDOVER_IN")
+            raise ValueError("invalid handover: should be handled by HANDOVER state")
 
         # en route
         # if current_waypoint.type == WayPointType.EN_ROUTE and goal_waypoint.type != WayPointType.HANDOVER_IN and goal_waypoint.type != WayPointType.HANDOVER_OUT:
@@ -241,6 +259,54 @@ class Airspace:
             raise ValueError(f"unknown gate id: {gate_id}")
         gate_local = self.map.grid_to_local(gate.position)
         return self.local_to_world(gate_local)
+
+    def get_gate_queue_global_positions(self, gate_id):
+        queue_positions = self.map.get_gate_queue_positions(gate_id)
+        queue_global_positions = []
+        for queue_pos in queue_positions:
+            queue_local = self.map.grid_to_local(queue_pos)
+            queue_global_positions.append(self.local_to_world(queue_local))
+        return queue_global_positions
+
+    def get_gate_queue_global_position_for_rank(self, gate_id, queue_rank):
+        queue_positions = self.get_gate_queue_global_positions(gate_id)
+        if not queue_positions:
+            return self.get_gate_global_position(gate_id)
+
+        # mvp behavior: overflow queue ranks hold at last configured slot.
+        queue_idx = min(max(queue_rank, 0), len(queue_positions) - 1)
+        return queue_positions[queue_idx]
+
+    def request_depot_slot(self, depot_id):
+        if depot_id not in self.depot_resources:
+            raise ValueError(f"Unknown depot id: {depot_id}")
+        return self.depot_resources[depot_id].request()
+
+    def release_depot_slot(self, depot_id, req):
+        if depot_id not in self.depot_resources:
+            raise ValueError(f"Unknown depot id: {depot_id}")
+        self.depot_resources[depot_id].release(req)
+
+    def get_depot_global_position(self, depot_id):
+        depot_local = self.map.get_depot_position(depot_id)
+        return self.local_to_world(depot_local)
+
+    def get_depot_queue_global_positions(self, depot_id):
+        queue_positions = self.map.get_depot_queue_positions(depot_id)
+        queue_global_positions = []
+        for queue_pos in queue_positions:
+            queue_local = self.map.grid_to_local(queue_pos)
+            queue_global_positions.append(self.local_to_world(queue_local))
+        return queue_global_positions
+
+    def get_depot_queue_global_position_for_rank(self, depot_id, queue_rank):
+        queue_positions = self.get_depot_queue_global_positions(depot_id)
+        if not queue_positions:
+            return self.get_depot_global_position(depot_id)
+
+        # mvp behavior: overflow queue ranks hold at last configured slot.
+        queue_idx = min(max(queue_rank, 0), len(queue_positions) - 1)
+        return queue_positions[queue_idx]
 
     def complete_handover(self, from_airspace_id, to_airspace_id, uav_id):
         self.world_manager.complete_handover(from_airspace_id, to_airspace_id, uav_id)
