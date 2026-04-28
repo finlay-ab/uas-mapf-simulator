@@ -6,10 +6,11 @@ from src.entities import UAV
 from src.schemas import Waypoint, WayPointType
 
 class WorldManager:
-    def __init__(self, config, env, policy):
+    def __init__(self, config, env, policy, metrics):
         self.config = config
         self.env = env
         self.policy = policy
+        self.metrics = metrics
         self.airspaces = {}
         self.graph = {}
         
@@ -34,7 +35,8 @@ class WorldManager:
             fleet_file = airspace['fleet_file']
             
             # create airspace and store in dict
-            self.airspaces[airspace_id] = Airspace(airspace_id, config_file, map_file, fleet_file, self.env, self.policy, self.config, world_manager=self)
+            self.airspaces[airspace_id] = Airspace(airspace_id, config_file, map_file, fleet_file, self.env, self.policy, self.config, world_manager=self, metrics=self.metrics)
+        return self.airspaces
     
     def _create_graph(self):
         for airspace_id in self.airspaces.keys():

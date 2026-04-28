@@ -40,7 +40,7 @@ class Simulation:
         self.completed_jobs = simpy.Store(self.env)
 
         # init world manager
-        self.world_manager = WorldManager(self.cfg, self.env, self.planner)
+        self.world_manager = WorldManager(self.cfg, self.env, self.planner, self.metrics)
 
 
     # run simulation

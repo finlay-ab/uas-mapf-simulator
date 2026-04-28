@@ -20,7 +20,7 @@ class TestSafety(unittest.TestCase):
         sm.update("UAV_1", pos2, np.array([0,0]), UAVState.EN_ROUTE)
 
         # check for conflict
-        sm.check_conflicts(met)
+        sm.check_conflicts(met, 0.0)
 
         # get metric
         stats = met.get_summary_statistics()
@@ -42,7 +42,7 @@ class TestSafety(unittest.TestCase):
         sm.update("UAV_0", pos1, np.array([0,0]), UAVState.EN_ROUTE)
         sm.update("UAV_1", pos2, np.array([0,0]), UAVState.EN_ROUTE)
 
-        sm.check_conflicts(met)
+        sm.check_conflicts(met, 0.0)
         stats = met.get_summary_statistics()
 
         # fail if it records a violation when it shouldnt
@@ -82,7 +82,7 @@ class TestSafety(unittest.TestCase):
         sm.update("UAV_0", np.array([0.0, 0.0]), np.array([0.0, 0.0]), UAVState.IDLE_DEPOT)
         sm.update("UAV_1", np.array([0.0, 0.0]), np.array([0.0, 0.0]), UAVState.IDLE_DEPOT)
 
-        sm.check_conflicts(met)
+        sm.check_conflicts(met, 0.0)
         stats = met.get_summary_statistics()
 
         self.assertEqual(stats["total violations"], 0)
@@ -95,7 +95,7 @@ class TestSafety(unittest.TestCase):
         sm.update("UAV_0", np.array([0.0, 0.0]), np.array([0.0, 0.0]), UAVState.TAKEOFF)
         sm.update("UAV_1", np.array([0.0, 0.0]), np.array([0.0, 0.0]), UAVState.LANDING)
 
-        sm.check_conflicts(met)
+        sm.check_conflicts(met, 0.0)
         stats = met.get_summary_statistics()
 
         self.assertEqual(stats["total violations"], 0)

@@ -83,3 +83,14 @@ class Gate:
     target_gate_id: str
     capacity: int
     queue_positions: list[GridPosition] = field(default_factory=list)
+
+@dataclass()
+class UAV_SEGMENT:
+    start_position: GlobalPosition
+    end_position: GlobalPosition
+    start_time: float
+    end_time: float
+    velocity: Velocity
+    radius: float
+    predicted_collisions: list = field(default_factory=list)
+    predicted_violations: list = field(default_factory=list)

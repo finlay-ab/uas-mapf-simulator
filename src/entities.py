@@ -3,9 +3,9 @@ import numpy as np
 import logging
 import json
 from .physics import Velocity
-from .schemas import JobStatus, WayPointType
+from .schemas import JobStatus, WayPointType, UAV_SEGMENT
 
-from src.physics import GlobalPosition, LocalPosition
+from src.physics import GlobalPosition, LocalPosition, Velocity
 
 # get log
 log = logging.getLogger("UAS_Sim")
@@ -38,6 +38,7 @@ class UAV:
         self.sm = sm
         self.cfg = cfg
         self.airspace = airspace
+        self.allow_predicted_collisions = getattr(cfg, "allow_predicted_collisions", True)
 
         self.depot = grid_map.get_depot_position(depot_owner_id)
 
@@ -65,7 +66,7 @@ class UAV:
         # start process
         # give state to sm
         if self.sm is not None:
-            self.sm.update(self.uav_id, self.pos, self.vel, self.state)
+            self.sm.update_position_snapshot(self.uav_id, self.pos, self.state)
 
         self.action = env.process(self.run())
 
@@ -169,7 +170,10 @@ class UAV:
         local_pos = self.airspace.world_to_local(self.pos)
         
         while self.path_index < len(self.current_path):
-            yield from self._execute_flight(local_pos, self.current_path[self.path_index])
+            flew = yield from self._execute_flight(local_pos, self.current_path[self.path_index])
+            if not flew:
+                self.state = UAVState.BLOCKED
+                return
             self.path_index += 1
 
         # handle arrival at next waypoint
@@ -235,6 +239,10 @@ class UAV:
         yield self.env.timeout(self.takeoff_time_s)
         self.airspace.release_depot_slot(self.depot_owner_id, depot_req)
 
+        # update pos snapshot at landing
+        if self.sm is not None:
+            self.sm.update_position_snapshot(self.uav_id, self.pos, UAVState.IDLE_DEPOT)
+
         self.current_job = None
         self.state = UAVState.IDLE_DEPOT
 
@@ -248,26 +256,86 @@ class UAV:
         
         # mvp: fixed handover duration
         yield self.env.timeout(1)
+        
+        # deregister from source airspace spatial manager before handover
+        if self.sm is not None:
+            self.sm.deregister_segment(self.uav_id, out_wp.position)
+        
+        # get destination airspace object
+        destination_airspace = self.airspace.world_manager.get_airspace(in_wp.airspace_id)
+        if destination_airspace is None:
+            raise ValueError(f"Destination airspace {in_wp.airspace_id} not found during handover")
+        
         self.airspace.complete_handover(out_wp.airspace_id, in_wp.airspace_id, self.uav_id)
 
         # update position to next wp
         self.pos = in_wp.position
-        print(f"UAV {self.uav_id} completed handover from airspace {out_wp.airspace_id} to airspace {in_wp.airspace_id} at time {self.env.now:.1f}s")
+        
+        # switch spatial manager reference to destination airspace
+        self.airspace = destination_airspace
+        self.sm = destination_airspace.spatial_manager
+        
+        # register with destination airspace's spatial manager
+        if self.sm is not None:
+            self.sm.update_position_snapshot(self.uav_id, self.pos, UAVState.EN_ROUTE)
+        
+        log.info(f"UAV {self.uav_id} completed handover from airspace {out_wp.airspace_id} to airspace {in_wp.airspace_id} at time {self.env.now:.1f}s")
 
         # update state to en route and increment route index
         self.state = UAVState.EN_ROUTE
         self.route_index += 1
 
     def _execute_flight(self, start: LocalPosition, target: LocalPosition):
+        # convert local positions to global for segment registration
+        start_global = self.airspace.local_to_world(start)
+        target_global = self.airspace.local_to_world(target)
+        
         # simulate flight time based on distance and cruise speed
         distance = np.linalg.norm(np.array([target.x - start.x, target.y - start.y]))
         flight_time = distance / self.cruise_speed_mps
+        
+        # create velocity vector from start to target
+        direction = np.array([target.x - start.x, target.y - start.y])
+        if distance > 0:
+            direction = direction / distance
+            vel_magnitude = self.cruise_speed_mps
+        else:
+            direction = np.array([0.0, 0.0])
+            vel_magnitude = 0.0
+        velocity = Velocity(direction[0] * vel_magnitude, direction[1] * vel_magnitude)
+        
+        # build UAV_SEGMENT for this flight leg
+        segment = UAV_SEGMENT(
+            start_position=start_global,
+            end_position=target_global,
+            start_time=self.env.now,
+            end_time=self.env.now + flight_time,
+            velocity=velocity,
+            radius=self.body_radius_m
+        )
+        
+        # check safety before committing to segment
+        if self.sm is not None:
+            safe = self.sm.check_segment_safety(self.uav_id, segment)
+            if not safe:
+                log.warning("uav %s segment collision predicted", self.uav_id)
+                if not self.allow_predicted_collisions:
+                    return False
+
+            # always register the segment so baseline planners can run through unsafe motion
+            self.sm.register_segment(self.uav_id, segment)
+        
+        # yield for flight duration 
         yield self.env.timeout(flight_time)
         
-        # update position and velocity
-        self.pos = self.airspace.local_to_world(target)
+        # on arrival deregister segment 
+        self.pos = target_global
+        if self.sm is not None:
+            self.sm.deregister_segment(self.uav_id, self.pos)
+        
         log.info("uav %s flew from (%.1f, %.1f) to (%.1f, %.1f)", self.uav_id, start.x, start.y, target.x, target.y)
         self.vel = Velocity(0.0, 0.0)
+        return True
 
     def _fly_to_global(self, target: GlobalPosition):
         if np.linalg.norm(np.array([self.pos.x - target.x, self.pos.y - target.y])) <= 1.0:
