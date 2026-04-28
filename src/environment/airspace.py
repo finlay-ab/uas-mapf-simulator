@@ -14,7 +14,7 @@ import logging
 log = logging.getLogger("UAS_Sim")  
 
 class Airspace:
-    def __init__(self, airspace_id, config_file, map_file, fleet_file, env, policy, cfg, world_manager):
+    def __init__(self, airspace_id, config_file, map_file, fleet_file, env, policy, cfg, world_manager, metrics):
         self.id = airspace_id
         self.config = self._load_config(config_file)
         self.origin = GlobalPosition(*self.config.get('origin', [0.0, 0.0]))
@@ -25,9 +25,10 @@ class Airspace:
         self.job_id = 0
         self.cfg = cfg
         self.world_manager = world_manager
+        self.metrics = metrics
 
         self.map = self._load_map(map_file)
-        self.spatial_manager = SpatialManager(10) 
+        self.spatial_manager = SpatialManager(10, metrics=metrics) 
 
         self.job_queues = {}
         # create a job queue for each depot and store in dict in airspaces
