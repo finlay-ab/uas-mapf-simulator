@@ -112,6 +112,15 @@ class UAV:
         # assign job and change state to takeoff
         self.current_job = job
         self.job_start_time = self.env.now
+        self.current_job.job_start_time = self.env.now
+        
+        # record job transition to IN_PROGRESS
+        self.airspace.metrics.record_job_in_progress_at_depot(
+            job_id=self.current_job.id,
+            started_time=self.env.now
+        )
+        
+        log.info("uav %s assigned job %s (%s -> %s)", self.uav_id, job.id, job.origin_airspace, job.destination_airspace)
         
         # get plan
         self.get_global_route()
@@ -209,11 +218,23 @@ class UAV:
 
         # simulate delivery time
         yield self.env.timeout(self.delivery_time_s)
-        log.info("uav %s completed delivery for job %s", self.uav_id, self.current_job.id)
-
+        
         # update job status
         self.current_job.status = JobStatus.COMPLETED
-        self.current_job.completion_time = self.env.now
+        self.current_job.job_completion_time = self.env.now
+        
+        # calculate delivery time
+        delivery_time = self.env.now - self.current_job.job_start_time
+        
+        # record delivery completion in metrics
+        self.airspace.metrics.record_delivery_complete_at_depot(
+            depot_id=self.depot_owner_id,
+            job_id=self.current_job.id,
+            delivery_time=delivery_time,
+            completed_time=self.env.now
+        )
+        
+        log.info("uav %s completed delivery for job %s (%.2fs)", self.uav_id, self.current_job.id, delivery_time)
 
         # update current state
         self.state = UAVState.EN_ROUTE

@@ -1,6 +1,9 @@
 import numpy as np
 import csv
+import logging
 from src.physics import GlobalPosition, LocalPosition
+
+log = logging.getLogger("UAS_Sim")
 
 # metrics for testing and evaluation
 class Metrics:
@@ -12,23 +15,27 @@ class Metrics:
         self.in_progress_deliveries = 0
         self.delivery_times = []  
         self.return_times = []
-
+        # depot tracking
+        self.depot_stats = {}
+        # airspace tracking
+        self.airspace_stats = {}
+        # job routing between airspaces
+        self.job_routing = {}
+        # spawn decisions (intra vs inter)
+        self.spawn_statistics = {}
+        # job lifecycle
+        self.job_lifecycle = {}
         # uav-uav collision metrics
         self.min_separation_observed = float('inf')
         self.flight_paths = {}  # uav_id -> list of positions
-
-        # uav id a, uav id b, distance at collision (uav within safety radius and colliding)
-        self.collision_events = [] 
-
-        # uav id a, uav id b, distance at violation (uav within safety radius but not colliding)
+        # collision events
+        self.collision_events = []
+        # safety violations
         self.safety_violation_events = []  # list of (uav_id_a, uav_id_b, distance)
-
         # uav-obstacle collision metric
         self.obstacle_collision_events = []  # list of (uav_id, obstacle_id, distance)
         self.airspace_violation_events = []  # list of (uav_id, airspace_id, violation_type)
-        
 
- 
     def record_job_request(self):
         self.jobs_requested += 1
 
@@ -62,6 +69,143 @@ class Metrics:
     def record_airspace_violation(self, uav_id, airspace_id, position: GlobalPosition):
         # record airspace violation with global position
         self.airspace_violation_events.append((uav_id, airspace_id, position.as_array() if hasattr(position, 'as_array') else position))
+
+    # per-depot and per-airspace job tracking
+    def record_job_request_at_depot(self, depot_id, origin_airspace, dest_airspace, job_id, creation_time):
+        self.jobs_requested += 1
+        spawn_type = "INTRA" if origin_airspace == dest_airspace else "INTER"
+        # init spawn stats if needed
+        if depot_id not in self.spawn_statistics:
+            self.spawn_statistics[depot_id] = {'intra': 0, 'inter': 0}
+        self.spawn_statistics[depot_id][spawn_type.lower()] += 1
+        # init depot stats if needed
+        if depot_id not in self.depot_stats:
+            self.depot_stats[depot_id] = {
+                'spawned': 0, 'completed': 0, 'failed': 0,
+                'delivery_times': [], 'return_times': []
+            }
+        # init airspace stats if needed
+        if origin_airspace not in self.airspace_stats:
+            self.airspace_stats[origin_airspace] = {
+                'total_jobs': 0, 'completed': 0, 'failed': 0,
+                'intra_airspace': 0, 'outbound': 0, 'inbound': 0
+            }
+        if dest_airspace not in self.airspace_stats:
+            self.airspace_stats[dest_airspace] = {
+                'total_jobs': 0, 'completed': 0, 'failed': 0,
+                'intra_airspace': 0, 'outbound': 0, 'inbound': 0
+            }
+        # track at depot
+        self.depot_stats[depot_id]['spawned'] += 1
+        # track routing
+        if origin_airspace not in self.job_routing:
+            self.job_routing[origin_airspace] = {}
+        if dest_airspace not in self.job_routing[origin_airspace]:
+            self.job_routing[origin_airspace][dest_airspace] = 0
+        self.job_routing[origin_airspace][dest_airspace] += 1
+        # track at airspace
+        self.airspace_stats[origin_airspace]['total_jobs'] += 1
+        if origin_airspace == dest_airspace:
+            self.airspace_stats[origin_airspace]['intra_airspace'] += 1
+        else:
+            self.airspace_stats[origin_airspace]['outbound'] += 1
+            self.airspace_stats[dest_airspace]['inbound'] += 1
+        # track job lifecycle
+        self.job_lifecycle[job_id] = {
+            'depot_id': depot_id,
+            'origin_airspace': origin_airspace,
+            'dest_airspace': dest_airspace,
+            'created_time': creation_time,
+            'started_time': None,
+            'completed_time': None,
+            'status': 'PENDING'
+        }
+
+    def record_job_in_progress_at_depot(self, job_id, started_time):
+        if job_id in self.job_lifecycle:
+            self.job_lifecycle[job_id]['started_time'] = started_time
+            self.job_lifecycle[job_id]['status'] = 'IN_PROGRESS'
+            self.in_progress_deliveries += 1
+
+    def record_delivery_complete_at_depot(self, depot_id, job_id, delivery_time, return_time=None, completed_time=None):
+        self.completed_deliveries += 1
+        self.delivery_times.append(delivery_time)
+        if return_time is not None:
+            self.return_times.append(return_time)
+        if depot_id in self.depot_stats:
+            self.depot_stats[depot_id]['completed'] += 1
+            self.depot_stats[depot_id]['delivery_times'].append(delivery_time)
+            if return_time is not None:
+                self.depot_stats[depot_id]['return_times'].append(return_time)
+        if job_id in self.job_lifecycle:
+            origin_airspace = self.job_lifecycle[job_id]['origin_airspace']
+            if origin_airspace in self.airspace_stats:
+                self.airspace_stats[origin_airspace]['completed'] += 1
+            self.job_lifecycle[job_id]['completed_time'] = completed_time
+            self.job_lifecycle[job_id]['status'] = 'COMPLETED'
+        if self.in_progress_deliveries > 0:
+            self.in_progress_deliveries -= 1
+
+    def record_job_failed_at_depot(self, depot_id, job_id, reason, failed_time):
+        self.failed_deliveries += 1
+        if depot_id in self.depot_stats:
+            self.depot_stats[depot_id]['failed'] += 1
+        if job_id in self.job_lifecycle:
+            origin_airspace = self.job_lifecycle[job_id]['origin_airspace']
+            if origin_airspace in self.airspace_stats:
+                self.airspace_stats[origin_airspace]['failed'] += 1
+            self.job_lifecycle[job_id]['completed_time'] = failed_time
+            self.job_lifecycle[job_id]['status'] = 'FAILED'
+            self.job_lifecycle[job_id]['failure_reason'] = reason
+        if self.in_progress_deliveries > 0:
+            self.in_progress_deliveries -= 1
+        log.warning("job %s failed at depot %s (%s)", job_id, depot_id, reason)
+
+    def get_depot_statistics(self):
+        depot_stats_summary = {}
+        for depot_id, stats in self.depot_stats.items():
+            avg_delivery = sum(stats['delivery_times']) / len(stats['delivery_times']) if len(stats['delivery_times']) > 0 else 0.0
+            avg_return = sum(stats['return_times']) / len(stats['return_times']) if len(stats['return_times']) > 0 else 0.0
+            depot_stats_summary[depot_id] = {
+                'spawned': stats['spawned'],
+                'completed': stats['completed'],
+                'failed': stats['failed'],
+                'completion_rate': stats['completed'] / max(stats['spawned'], 1),
+                'avg_delivery_time': round(avg_delivery, 2),
+                'avg_return_time': round(avg_return, 2),
+            }
+        return depot_stats_summary
+
+    def get_airspace_statistics(self):
+        airspace_stats_summary = {}
+        for airspace_id, stats in self.airspace_stats.items():
+            completion_rate = stats['completed'] / max(stats['total_jobs'], 1)
+            airspace_stats_summary[airspace_id] = {
+                'total_jobs': stats['total_jobs'],
+                'completed': stats['completed'],
+                'failed': stats['failed'],
+                'intra_airspace': stats['intra_airspace'],
+                'outbound': stats['outbound'],
+                'inbound': stats['inbound'],
+                'completion_rate': round(completion_rate, 3),
+            }
+        return airspace_stats_summary
+
+    def get_routing_matrix(self):
+        return self.job_routing
+
+    def get_spawn_statistics(self):
+        spawn_stats_summary = {}
+        for depot_id, stats in self.spawn_statistics.items():
+            total = stats['intra'] + stats['inter']
+            inter_rate = stats['inter'] / total if total > 0 else 0.0
+            spawn_stats_summary[depot_id] = {
+                'spawned': total,
+                'intra_airspace': stats['intra'],
+                'inter_airspace': stats['inter'],
+                'inter_airspace_rate': round(inter_rate, 3),
+            }
+        return spawn_stats_summary
 
     def get_summary_statistics(self):
         # if there is delivery times then

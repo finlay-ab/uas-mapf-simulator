@@ -41,10 +41,10 @@ class Job:
     origin_depot: str
     destination_airspace: str
     target_pos: GlobalPosition
-    status: JobStatus = JobStatus.PENDING   
+    status: JobStatus = JobStatus.PENDING
     job_creation_time: float = None
     job_start_time: float = None
-    job_end_time: float = None
+    job_completion_time: float = None
 
 # in order of severity 
 class AirspaceType(Enum):
