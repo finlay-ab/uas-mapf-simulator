@@ -45,8 +45,12 @@ class Simulation:
 
     # run simulation
     def run(self):
-        log.info(f"Starting Simulation for {self.cfg.sim_time}s...")
+        log.info("="*80)
+        log.info(f"Starting Simulation for {self.cfg.sim_time}s")
+        log.info("="*80)
+        
         self.env.run(until=self.cfg.sim_time)
+        
         log.info(f"[{self.env.now:4.1f}] END OF SIMULATION")
         self.metrics.save_to_csv(self.cfg.csv_file)
         log.info(f"Results saved to {self.cfg.csv_file}")

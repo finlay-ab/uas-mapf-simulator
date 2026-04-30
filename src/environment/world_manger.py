@@ -1,9 +1,12 @@
 import json
+import logging
 from src.environment.airspace import Airspace
 from src.environment.map import GridMap
 from src.physics import GlobalPosition, LocalPosition
 from src.entities import UAV
 from src.schemas import Waypoint, WayPointType
+
+log = logging.getLogger("UAS_Sim")
 
 class WorldManager:
     def __init__(self, config, env, policy, metrics):

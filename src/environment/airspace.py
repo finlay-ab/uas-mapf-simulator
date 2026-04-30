@@ -134,9 +134,19 @@ class Airspace:
                 origin_depot=depot_id,
                 destination_airspace=destination_airspace,  
                 target_pos=destination,
-                status=JobStatus.PENDING
+                status=JobStatus.PENDING,
+                job_creation_time=self.env.now
             )
             self.job_id += 1
+            
+            # record job spawn in metrics
+            self.metrics.record_job_request_at_depot(
+                depot_id=depot_id,
+                origin_airspace=self.id,
+                dest_airspace=destination_airspace,
+                job_id=job.id,
+                creation_time=self.env.now
+            )
 
             yield self.job_queues[depot_id].put(job)
            
