@@ -2,11 +2,13 @@
 
 \vspace{10pt}
 
-As the commercial use of Unmanned Aerial Systems (UASs) for tasks such as surveillance, maintenance, and goods delivery increases, it is expected that the density of urban air traffic will exceed the capacity of traditional human control centers. To ensure safety and efficiency, an automated unmanned approach to UAS traffic management (UTM) is required. \par
+As the commercial use of Unmanned Aerial Systems (UASs) for tasks such as surveillance, infrastructure maintenance, and goods delivery increases, the density of urban air traffic will exceed the capacity of traditional human control centers. To ensure safety and efficiency at scale, an automated unmanned approach to UAS Traffic Management (UTM) is required, in which Airspace Service Providers (ASPs) nogotiate flight plans with operators without continous human oversight.\par
 
 \vspace{10pt}
 
-This project addresses this challenge by applying Multi-Agent Path Finding (MAPF) strategies to the domain of autonomous urban airspace management. The primary aim was to evaluate different automated airspace management policies by developing a custom discrete-event simulation tool capable of modeling airspace service providers (ASPs) and processing dynamic flight plan requirements. \par
+This project addresses that challenge by Treating urban airspace managment as a Multi-Agent Path Finding (MAPF) problem and evaluating a range of management polices through simulation.A custom discrete-event simulaiton framework was developed in Python using SimPy, capable of modelling one or more ASPs serving dynamic flight-plan requests accross a configurabel urban grid.  \par
+
+Nine policies were implemented and compared, ranging from uninformed search baselines (BFS, DFS) and a naive direct-path policy that ignores obstacles and other agents to provide a lower-bound reference on achievable flight time, through single-agent informed and dynamic-replanning methods (A*, D*), to multi-agent coordination strategies (Cooperative A*, Windowed Hierarchical Cooperative A*, prioritised A*, and an occupancy-aware A* variant). \par
 
 \vspace{10pt}
 
