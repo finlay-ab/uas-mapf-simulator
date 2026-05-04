@@ -15,11 +15,24 @@ Here is an example of how to cite a reference using the numeric system \cite{par
 
 < why does this problem matter>
 
+The comercial use of Unmanned Aerial Systems (UASs) in urban environments is expanding rapidly, with applications ranging from goods delivery and infrastucture inspection to survalance and sports coverage. \par
+
+
 <regulatory context to specific prolem>
+
+Industry projections and regulatory road maps anticipate that the density of low altitude urban air traffic will within the next decade exceed what can be co-ordantied by human Air Traffic Contorllers (ATCs). This is why governments and regulatory bodies have developed frameworks for automated UAS Traffic Managment (UTM): in May 2025, the European Union Aviation Safety Agency certified its first U-space Service Provider \cite{easa2025anra}, and the United kingdom Civial Aviation Authoriy has published targets aimed at enabling urban UTM by 2028 \cite{caa2024bvlos}. Despite this the technical challenges of developing such an automated sytem and how it should perform remains an area of active research. \par
+
 
 <computational lense>
 
+A central part of the UTM problem is Airspace Service providers (ASPs) must be able to co-ordinate the flight plan requests within a defined sector of urban airspace \cite{kopardekar2014utm, faa2022utmconops}. Multiple ASPs are expected to operate concurrently in a networked system, managing the handover of of UASs between sectors by following well-defined protocols. The policies and protocols by which ASPs give autherisation decisions fundimentially shape the saftey and efficiency of the UTM system, yet the comparative behaviour of different policies under realistic demand patterns is not yet well understood. \par
+
 <what is the problem we are trying to solve>
+
+This project frames the problem of co-ordinating UASs through ASPs as a Multi-Agent Path Finding (MAPF) problem.The problem of finding collision free paths for multiple agents sharing a descrete environment \cite{stern2019multi}. MAPF is a well studied problem with a large body of literature on algorithms for saftey, optimality and scalablity of different automated management policies. Aswell as a substantial number of potential candiadate algorithms ranging from simple heuristic searches to complex conflict resolving procedures. Treating the UTM problem as a MAPF problem makes it possable to evaluate polices systematially under quantified demand patterns to compare and contrast there performance (rather then judging them on intuition). \par
+
+To support this evaluation, a custom discrete-event simulaiton framework has been developed in python using SimPy. The simulaiton models a two-dimensional urban airspace divided into multiple grid sectors, each managed by an independed ASP and conneted to its neighours by directional gates that abstract the handover protocols described in the UTM literature. 
+
 
 <aims and objectives>
 
