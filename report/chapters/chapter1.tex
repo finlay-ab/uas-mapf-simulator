@@ -72,6 +72,13 @@ The single-agent path planning algorithms described in this section can plan one
 \subsection{Multi-agent path finding}
 \label{sec:mapf}
 
+Multi-Agent Path Finding (MAPF) extends the single-agent path planning problem to environments in which multiple agents operate and their paths must not conflict with each other. Stern et al. \cite{stern2019mapf} define the MAPF problem as a set of agents, each with an assigned start and goal location, that must find paths to their respective goals without colliding with each other. The problem is typically modelled on a discrete grid or graph in which agents move to adjacent nodes at each time step. The standard objectives are makespan, defined as the time at which the last agent reaches its goal and flowtime, defined as the sum of individual agents path costs. The variant addressed in this work is non-anonymous, lifelong, and online: UAV identities are fixed, new flight plan requests arrive dynamically during execution, and each UAV operates a depot-bound task cycle in which it travels from its home depot to a pickup location, on to a delivery location, and back to its home depot before becoming available for a new job. This depot-bound structure is a constrained form of the lifelong Multi-Agent pickup and delivery formulation introduced for warehouse automation by Ma et al. \cite{ma2017lifelong}, in which agents receive new tasks immediately upon completing a delivery; the constraint reflects the operational realities of UAS delivery, where drones typically return to a depot between flights for recharging and maintenance. \par
+
+\vspace{1em}
+
+
+
+
 
 
 \subsection{UAS Traffic Management}
