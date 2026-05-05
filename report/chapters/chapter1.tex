@@ -31,12 +31,15 @@ A central part of the UTM problem is Airspace Service providers (ASPs) must be a
 
 This project frames the problem of co-ordinating UASs through ASPs as a Multi-Agent Path Finding (MAPF) problem.The problem of finding collision free paths for multiple agents sharing a descrete environment \cite{stern2019multi}. MAPF is a well studied problem with a large body of literature on algorithms for saftey, optimality and scalablity of different automated management policies. Aswell as a substantial number of potential candiadate algorithms ranging from simple heuristic searches to complex conflict resolving procedures. Treating the UTM problem as a MAPF problem makes it possable to evaluate polices systematially under quantified demand patterns to compare and contrast there performance (rather then judging them on intuition). \par
 
-To support this evaluation, a custom discrete-event simulaiton framework has been developed in python using SimPy. The simulaiton models a two-dimensional urban airspace divided into multiple grid sectors, each managed by an independed ASP and conneted to its neighours by directional gates that abstract the handover protocols described in the UTM literature. 
-
+To support this evaluation, a custom discrete-event simulaiton framework has been developed in python using SimPy. The simulaiton models a two-dimensional urban airspace divided into multiple grid sectors, each managed by an independed ASP and connected to its neighours by directional gates that abstract the handover protocols described in the UTM literature. UAVs operate as lifelong agents (as introduced by Ma et al \cite{ma2020lifelong}), picking up jobs from designated depots and travelling between depots and destinations that may be located within there orgin sector or in a different sector. Routing is structured heirarchically; a high level planner that resolves the airspaces the UAV must pass through, and a low level planner which is responsable for finding a path within a sector. The low level planner is suplimented with optional collision avoidance polices such as reservation based deconfliction and Recipricol Velocity Obstacles (RVO) \par
 
 <aims and objectives>
 
+The aim of this project is to evalutae the comparative performance of automated airpsace manegment polices for ASP controlled urban UAS traffic, with particular focus to the saftey and efficiency trade-off that distinguishes one policy from another. The associated objectives are to design and imliment a multi-ASP discrete-event simultion frameowrk, to define quantitative perfromance metrics coverving both saftey (seperation violations) and efficientcy (timeliness and throughput), to impliment a range of management policies, and to conduct a systematic evaluation of these polices under varying demand patterns and constraints. \par
+
 <roadmap>
+
+
 
 % Must provide evidence of a literature review. Use sections
 % and subsections as they make sense for your project.
