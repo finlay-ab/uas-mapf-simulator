@@ -59,10 +59,15 @@ The A* algorithm dominates the literature on single-agent path planning and is w
 
 \vspace{1em}
 
-While the A* algorithm is optimal for pathfinding, it doesnt account for the dynamic nature of the environment, such as moving obstacles or changing conditions. This is where the D* algorithm comes in \cite{stentz1994dstar} D* is an extension of A* that allows for replanning in dynamic environments. It maintains a cost map of the environment and updates it as new information becomes available, allowing it to efficiently replan paths when obstacles are detected or conditions change. Within the context of this project, D* lite is used which is an augmentation of D* that is more efficient and easier to implement  \cite{koenig2004dstar}. \par
+While the A* algorithm is optimal for pathfinding, it doesnt account for the dynamic nature of the environment, such as moving obstacles or changing conditions. This is where the D* algorithm comes in \cite{stentz1994dstar} D* is an extension of A* that allows for replanning in dynamic environments. It maintains a cost map of the environment and updates it as new information becomes available, allowing it to efficiently replan paths when obstacles are detected or conditions change. Within the context of this project, D* lite is used which is an augmentation of D* that is more efficient and easier to implement \cite{koenig2004dstar} as it works backwards from the goal to the start making it more suitable for real-time applications (or simulations) as the end goal stays the same but the current state may change. \par
 
+\vspace{1em}
 
+The final single-agent path planning algorithm used in this project is a "greedy" algorithm. This algirthm always returns the straight line path between the start and goal, even if the path is not collision free. This algorithm is intended to provide a lowest baseline for comparision with other algorithms, as it is the most efficient in terms of computational time but has no guarantees of optimality or saftey. \par
 
+\vspace{1em}
+
+The single-agent path planning algorithms described in this section can plan one agents path through an evenronment that is static, however they do not account for the presence of other agents within the environment. When multiple agents share an environment, and their plans interact, applying a single agent path planning algoirhtm produces plans that may conflict at execution time. Resolving these conflicts is the problem of multi-agent path finding, which is the focus of this project and is discussed in the next section. \par
 
 \subsection{Multi-agent path finding}
 \label{sec:mapf}
