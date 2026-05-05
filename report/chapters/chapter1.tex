@@ -33,17 +33,35 @@ The aim of this project is to evalutae the comparative performance of automated 
 
 \vspace{1em}
 
-the remainder of this report is structured as followed: The remainder of this chapter reivews the literatire on single-agent planning, multi-agent planning, UAS traffic managment, and reservation baed deconfliction. Chapter 2 describes the design and methodology of the simulation framwork, includign the achritecture, the polices and the project managment approch adopted. Chapter 3 documents the implimentation, validationa nd testing of the simulaitn frameowrk. Chapter 4 presents the experimental results and discusses tehir implicaitons for ASP polciy design. Finally Chapter 5 concludes the report and ideities directions for future work.
+the remainder of this report is structured as followed: The remainder of this chapter reivews the literatire on single-agent planning, multi-agent planning, UAS traffic managment, and reservation baed deconfliction. Chapter 2 describes the design and methodology of the simulation framwork, includign the achritecture, the polices and the project managment approch adopted. Chapter 3 documents the implimentation, validationa nd testing of the simulaitn frameowrk. Chapter 4 presents the experimental results and discusses tehir implicaitons for ASP polciy design. Finally Chapter 5 concludes the report and ideities directions for future work.\par
+
+\vspace{1em}
 
 
 % Must provide evidence of a literature review. Use sections
 % and subsections as they make sense for your project.
 \section{Literature review}
 
-This chapter reviews the relevant literature on which this project is based. The review straddles three research areas: algorithmic literature on pathfinding, operational and regulatory literature on UAS traffic management, and the enginnering literature on conflict resolution in multi-agent systems. The remainder of this chapter examines each and identies the specific gap this project aims to fill. 
+This chapter reviews the relevant literature on which this project is based. The review straddles three research areas: algorithmic literature on pathfinding, operational and regulatory literature on UAS traffic management, and the enginnering literature on conflict resolution in multi-agent systems. The remainder of this chapter examines each and identies the specific gap this project aims to fill. \par
 
 \subsection{Single-agent path planning}
 \label{sec:single-agent-planning}
+
+Single-agent path planning, the problem of computing a route between two points in a given environment subject to constraints (such as obstacles and cost functions), has been extensively studied as early as the 1950s and provides the foundation for the multi-agent path finding problem. This subsection introduces teh algorithms that appear as componets of the multi-agent path finding polcies evaluated in this project, and the literature on which they are based. \par
+
+\vspace{1em}
+
+Breadth-First Search (BFS) and Depth-First Search (DFS) are the most basic uninformed search algorithms for path planning \cite{cormen2022clrs}. BFS returns the path with the fewst steps from start to goal on a uniform cost grid, while DFS explores each branch to the maximum depth before backtracking. while both algorithms are complete neither is optimal, and both can be inefficient in large search spaces. they have been included in this project as a baseline for comparison with more sophiticated algorithms and to provide a measureable benchmark for which more complex algorithms can be compared against. \par
+
+\vspace{1em}
+
+The A* algorithm dominates the literature on single-agent path planning and is widely used in practice \cite{hart1968astar}. A* augments Dijkstras algorithm with a heuristic estimate of the remaining cost from each point to the goal, and is guaranteed to return an optimal path whenever this heuristic is admissible (never overestimates the true cost). By focusing the seach toward the goal rather than expanding all possible paths, therefor making A* substantially more efficient than uninformed algorithms like BFS and DFS. while retianing the optimality guaranteees. The implimentation in this project uses the euclidean distance (the straight-line distance) to the goal as its heuristic. \par
+
+\vspace{1em}
+
+While the A* algorithm is optimal for pathfinding, it doesnt account for the dynamic nature of the environment, such as moving obstacles or changing conditions. This is where the D* algorithm comes in \cite{stentz1994dstar} D* is an extension of A* that allows for replanning in dynamic environments. It maintains a cost map of the environment and updates it as new information becomes available, allowing it to efficiently replan paths when obstacles are detected or conditions change. Within the context of this project, D* lite is used which is an augmentation of D* that is more efficient and easier to implement  \cite{koenig2004dstar}. \par
+
+
 
 
 \subsection{Multi-agent path finding}
