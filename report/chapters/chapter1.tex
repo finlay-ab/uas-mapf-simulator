@@ -33,7 +33,7 @@ The aim of this project is to evalutae the comparative performance of automated 
 
 \vspace{1em}
 
-the remainder of this report is structured as followed: The remainder of this chapter reivews the literatire on single-agent planning, multi-agent planning, UAS traffic managment, and reservation baed deconfliction. Chapter 2 describes the design and methodology of the simulation framwork, includign the achritecture, the polices and the project managment approch adopted. Chapter 3 documents the implimentation, validationa nd testing of the simulaitn frameowrk. Chapter 4 presents the experimental results and discusses tehir implicaitons for ASP polciy design. Finally Chapter 5 concludes the report and ideities directions for future work.\par
+the remainder of this report is structured as followed: The remainder of this chapter reivews the literatire on single-agent planning, multi-agent planning, UAS traffic managment, and reservation baed deconfliction. Chapter 2 describes the design and methodology of the simulation framwork, includign the achritecture, the polices and the project managment approch adopted. Chapter 3 documents the implimentation, validationa nd testing of the simulaitn frameowrk. Chapter 4 presents the experimental results and discusses thier implicaitons for ASP polciy design. Finally Chapter 5 concludes the report and ideities directions for future work.\par
 
 \vspace{1em}
 
@@ -76,18 +76,58 @@ Multi-Agent Path Finding (MAPF) extends the single-agent path planning problem t
 
 \vspace{1em}
 
-
-
+Prioritised planning, introduced by Erdmann and Lozano-P\'erez \cite{erdmann1987multiple}, assigns agents a priority order and plans their paths sequentially, each agent treating the planned paths of higher-priority agents as dynamic obstacles. This approach is simple and efficient, and can be very effective in practice, especially when the priority order is well-chosen. However despite this method being substantially cheaper then the methods i will discuss below, it is incomplete: a higher priority agents plan can block all remaining paths for a lower priority agent, even if a valid plan could be feasable given a different ordering. One way this is resolved, is by using Priority Based Search (PBS) \cite{ma2019pbs}, which achives completeness by searching systematically over partial priority orderings rather than commiting to a single fixed order. \par
 
 
 
 \subsection{UAS Traffic Management}
 \label{sec:utm}
 
+The MAPF literature provides a range of algorithms in which multiple agents can be co-ordinated, but it does not address the specific context in which the project sits. The UAS Traffic Management (UTM) literature provides the framework for understanding the conventions, regulations and operational realities of UAS traffic in urban environments. \par
+
+\vspace{1em}
+
+The idea of UTM was first proposed by Kopardekar at NASA \cite{kopardekar2014utm} as a response to the anticipated growth of UAS operations in low-altitude operations. Kopardekar observed that current human controlled ATC infrastructure couldn't scale to the densities anticipated for commercial UAS operations. Therefor he proposed a new system of automated traffic management, in which multiple Airspace Service Providers (ASPs) would co-ordinate the flight plans of UASs within defined sectors of urban airspace. This proposal has since shaped the regulatory oversight and development of UTM systems. The FAA's UTM Concept of Operations \cite{faa2022utmconops} and the European Union's U-space framework \cite{easa2025anra} both define protocols outlined in the paper by Kopardekar, in which ASPs manage the airspace within their sector and co-ordinate with neighbouring ASPs to manage handovers of UASs between sectors. This literature provides the context for this project and the basis for the design of the simulation framework. \par
+
+\vspace{1em}
+
+A growing body of reseach appling MAPF techniques to UTM has emerged in recent years. one line of research by Ho et al. \cite{ho2019mapf, ho202decentralised, ho2022mapf} progressivly develops a range of algorithms for co-ordinating UAS traffic focusing on decentralised execution joint with centralised planning. Another line of research by Sarcharny and Henderson \cite{sarcharny2022strategic} focuses on a line-based architecture in which airspaces are restrcted to predefined corridors. not only does this make the problem more tractable but it also  allows for segment based reservations which are more efficient then uavs reserving individual grid cells as it reduces deconfliction from a high dimentioal space time seach to a one dimentional scheduling problem. This system is similar to the one adopted in this project, however the focus of this project is on the comparative performance of different policies for co-ordinating UAS traffic, rather than the development of a single novel algorithm. \par
+
+\vspace{1em}
+
+despite active reseach within the UTM literature, the comparative performance of different policies with there Satey and efficiency trade-offs under realistic demand patterns is not yet well understood. Exisiting work tents to focus on either an optimal centralised solution and specific architeures rather then an emirical evalutation of candidate policies.  \par
+
 
 
 \subsection{Reservation-based deconfliction and reactive deconfliction}
 \label{sec:reservation}
+
+Conflict avoidance in multi-agent systems can be approached at two layers. At plan time, when agensts commit in adance plans that are contructed to be conflict free, and at execution time, when agents adjust there motion reactivly in response to observed conflict risk. Operational UTM frameowkrs combine both with strategic deconfliction policies in planning and tactical deconfliction policies that can handle the uncertainty and dynamic nature that is inherant to real world UAS operations. \cite{faa2022utmconops}. This subscetion exemaines both layers and how they will relate to the design adopted in the project. \par
+
+\vspace{1em}
+
+The reservation table introduced by Silver \cite{silver2005cooperative} is the fundimental mechanism for strategic deconfliction in MAPF. it indexes vertex time pairs that represent the current and planned occupation of a vertex at a given times. Agents can query the reservation table to check for potential conflicts with other agents, and can update the table when they commit to a plan. This mechanism is used in many MAPF algorithms, including the ones evaluated in this project, as it provides a simple and efficient way to manage conflicts at plan time. \par
+
+\vspace{1em}
+
+However, as the planning horizon increases (how far into the future agents plan), the reservation table and thus the complexity of finding conflict free paths increases substntially. Phillips and likhachev \cite{phillips2011sipp} addresses this with safe interval planning by using "safe time intervals" to represent the time periods in which a vertex is free of conflicts, rather then using a reservation table that tracks the occupation of each vertex at each time step. \par
+
+\vspace{1em}
+
+The reseravtion table is also limted as it relies on agents commiting to plans in advanced, assuming they will not change and as the planning horizon increases the complexity of finding and checking for a conflict free path increases substantially, and the risk of a future event chaning the environment and invalidating the plan increases. This highlights the need for reactive deconfliction which will be discussed later in this section. \par
+
+\vspace{1em}
+
+The reservation mechanism implemented in this project is a segment based reservation system, in which agents reserve segments of the airspace rather than individual grid cells. This is more efficient as it reduces the dimensionality of the search space for conflict free paths.\par
+
+\vspace{1em}
+
+<avation > UTM>
+
+In aviation operations, strategic deconfliction 
+
+
+
 
 
 
