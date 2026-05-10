@@ -1,0 +1,9 @@
+{
+  "depots": [
+    { "id": "north_hub", "num_uavs": 3, "type": "default" },
+    { "id": "south_hub", "num_uavs": 2, "type": "default" }
+  ],
+  "defaults": {
+    "num_uavs": 0
+  }
+}
