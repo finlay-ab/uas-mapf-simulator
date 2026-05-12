@@ -1,3 +1,5 @@
+import argparse
+
 from src.config import SimConfig
 from src.simulation import Simulation
 import logging
@@ -5,8 +7,19 @@ import logging
 log = logging.getLogger("UAS_Sim")
 
 if __name__ == "__main__":
-    # load default config
-    cfg = SimConfig()
+    parser = argparse.ArgumentParser(description="run UAS MAPF simulation")
+    parser.add_argument("--config", help="load json config file")
+    parser.add_argument("--seed", type=int, help="seed")
+    args = parser.parse_args()
+
+    # load config from file if provided
+    if args.config:
+        overrides = {"seed": args.seed} if args.seed is not None else None
+        cfg = SimConfig.from_file(args.config, overrides=overrides)
+    # else use seed provided
+    else:
+        cfg = SimConfig()
+        cfg.seed = args.seed
     
     # run sim
     sim = Simulation(cfg)

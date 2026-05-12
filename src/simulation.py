@@ -14,6 +14,11 @@ class Simulation:
     def __init__(self, config):
         self.cfg = config
 
+        # use seed
+        if self.cfg.seed is not None:
+            random.seed(int(self.cfg.seed))
+            np.random.seed(int(self.cfg.seed))
+
         # setup logging
         logging.basicConfig(
             level=logging.INFO,
@@ -35,10 +40,6 @@ class Simulation:
         # init planner
         self.planner = create_planner(self.cfg)
 
-        # init queues
-        self.pending_jobs = simpy.Store(self.env)
-        self.completed_jobs = simpy.Store(self.env)
-
         # init world manager
         self.world_manager = WorldManager(self.cfg, self.env, self.planner, self.metrics)
 
@@ -54,3 +55,10 @@ class Simulation:
         log.info(f"[{self.env.now:4.1f}] END OF SIMULATION")
         self.metrics.save_to_csv(self.cfg.csv_file)
         log.info(f"Results saved to {self.cfg.csv_file}")
+
+
+def simulation_from_config_file(config_file, overrides=None):
+    from src.config import SimConfig
+
+    cfg = SimConfig.from_file(config_file, overrides=overrides)
+    return Simulation(cfg)
