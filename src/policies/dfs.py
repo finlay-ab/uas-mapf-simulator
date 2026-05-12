@@ -1,15 +1,13 @@
-from collections import deque
-
 import numpy as np
 
 from src.physics import GridPosition, LocalPosition, Velocity
 from src.policies.base import MAPFPolicy
 
-# hard cap on node expansions to stop pathological searches running forever
 MAX_EXPANSIONS = 200_000
+MAX_DEPTH = 600
 
 
-class BFSPathPolicy(MAPFPolicy):
+class DFSPathPolicy(MAPFPolicy):
     def __init__(self, grid_map, max_speed=5.0, safety_radius=1.0, drone_radius=0.5, connectivity=4):
         super().__init__(grid_map, max_speed, safety_radius, drone_radius)
 
@@ -44,13 +42,15 @@ class BFSPathPolicy(MAPFPolicy):
         if not self.grid_map.is_traversable(GridPosition(goal_node[0], goal_node[1]), self.drone_radius):
             return None
 
-        queue = deque([start_node])
+        # loop over stack until empty or goal found
+        stack = [(start_node, 0)]
         came_from = {}
         visited = {start_node}
         expansions = 0
 
-        while queue:
-            current = queue.popleft()
+        while stack:
+            current, depth = stack.pop()
+
             if current == goal_node:
                 grid_path = self._reconstruct_path(came_from, current)
                 world_path = [LocalPosition(float(self.grid_map.grid_to_world_point(node[0], node[1], center=True)[0]), float(self.grid_map.grid_to_world_point(node[0], node[1], center=True)[1])) for node in grid_path]
@@ -64,14 +64,18 @@ class BFSPathPolicy(MAPFPolicy):
             if expansions >= MAX_EXPANSIONS:
                 return None
 
+            # dont expand past the depth limit
+            if depth >= MAX_DEPTH:
+                continue
+
             for nxt in self.grid_map.get_neighbors(current[0], current[1], self.drone_radius, self.connectivity):
                 if nxt in visited:
                     continue
                 visited.add(nxt)
                 came_from[nxt] = current
-                queue.append(nxt)
+                stack.append((nxt, depth + 1))
 
-        # queue exhausted without finding the goal
+        # no path found
         return None
 
     def get_velocity(self, name, pos, target, spatial_manager):
