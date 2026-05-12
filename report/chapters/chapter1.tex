@@ -9,13 +9,133 @@
 % so many layers of section structure.
 \section{Introduction}
 
-<A brief introduction suitable for a non-specialist, {\em i.e.} without using technical terms or jargon, as far as possible. This may be similar/the same as that in the 'Outline and Plan' document. The remainder of this chapter will normally cover everything to be assessed under the `Background Research` criterion in the mark scheme.>
+The comercial use of Unmanned Aerial Systems (UASs) in urban environments is expanding rapidly, with applications ranging from goods delivery and infrastucture inspection to survalance and sports coverage. \par
 
-Here is an example of how to cite a reference using the numeric system \cite{parikh1980adaptive}.
+\vspace{1em}
 
+Industry projections and regulatory road maps anticipate that the density of low altitude urban air traffic will within the next decade exceed what can be co-ordantied by human Air Traffic Contorllers (ATCs). This is why governments and regulatory bodies have developed frameworks for automated UAS Traffic Managment (UTM): in May 2025, the European Union Aviation Safety Agency certified its first U-space Service Provider \cite{easa2025anra}, and the United kingdom Civial Aviation Authoriy has published targets aimed at enabling urban UTM by 2028 \cite{caa2024bvlos}. Despite this the technical challenges of developing such an automated sytem and how it should perform remains an area of active research. \par
+
+\vspace{1em}
+
+A central part of the UTM problem is Airspace Service providers (ASPs) must be able to co-ordinate the flight plan requests within a defined sector of urban airspace \cite{kopardekar2014utm, faa2022utmconops}. Multiple ASPs are expected to operate at once in a networked system, managing the handover of of UASs between sectors by following well defined protocols. The policies and protocols in which ASPs give authorisation decisions fundimentially shape the saftey and efficiency of the UTM system, yet the comparative behaviour of different policies under realistic demand patterns is not well understood. \par
+
+\vspace{1em}
+
+This project frames the problem of co-ordinating UASs through ASPs as a Multi-Agent Path Finding (MAPF) problem. The problem of finding collision free paths for multiple agents sharing a descrete environment \cite{stern2019multi}. MAPF is a well studied problem with a large body of literature on algorithms for saftey, optimality and scalablity of different automated management policies. Aswell as a substantial number of potential candiadate algorithms ranging from simple heuristic searches to complex conflict resolving procedures. Treating the UTM problem as a MAPF problem makes it possable to evaluate polices systematially under quantified demand patterns to compare and contrast there performance (rather then judging them on intuition). \par
+
+\vspace{1em}
+
+To support this evaluation, a custom discrete event simulaiton (DES) framework has been developed in python using SimPy. The simulaiton models a two dimensional urban airspace divided into multiple grid sectors, each managed by an independent ASP and it is connected to its neighours by directional gates that abstract the handover protocols described in the UTM literature. UAVs operate as lifelong agents (as introduced by Ma et al \cite{ma2020lifelong}), picking up jobs from designated depots and travelling between depots and destinations that may be located within there orgin sector or in a different sector. Routing is structured heirarchically; a high level planner that resolves the airspaces the UAV must pass through, and a low level planner which is responsable for finding a path within a sector. The low level planner is suplimented with optional segment-based reservation mechanism, which provides a contious conflict detection and can request the UAV to hold or re-route. \par
+
+\vspace{1em}
+
+The aim of this project is to evaluate the comparative performance of automated airpsace manegment polices for ASP controlled urban UAS traffic, with particular focus to the saftey and efficiency trade-off that distinguishes one policy from another. The associated objectives are to design and imliment a multi-ASP discrete-event simultion frameowrk, to define quantitative perfromance metrics coverving both saftey (seperation violations) and efficientcy (timeliness and throughput), to impliment a range of management policies, and to conduct a systematic evaluation of these polices under varying demand patterns and constraints. \par
+
+\vspace{1em}
+
+The remainder of this report is structured as followed: The remainder of this chapter reivews the literatire on single-agent planning, multi-agent planning, UAS traffic managment, and reservation based deconfliction. Chapter 2 describes the design and methodology of the simulation framwork, including the architecture, the polices and the project managment approach adopted. Chapter 3 documents the implimentation, validation and testing of the simulation framework. Chapter 4 presents the experimental results and discusses thier implicaitons for ASP polciy design. Finally Chapter 5 concludes the report and ideities directions for future work.\par
+
+\vspace{1em}
 
 % Must provide evidence of a literature review. Use sections
 % and subsections as they make sense for your project.
 \section{Literature review}
-<This section heading is purely a suggestion -- you should subdivide this chapter in whatever manner you think makes most sense for your project. It may also make sense to spread the `Background Research' over more than one chapter, in which case they should be named sensibly.>
 
+This chapter reviews the relevant literature on which this project is based. The review straddles three research areas: algorithmic literature on pathfinding, operational and regulatory literature on UAS traffic management, and the enginnering literature on conflict resolution in multi-agent systems. The remainder of this chapter examines each and identifies the specific gap this project aims to fill. \par
+
+\subsection{Single-agent path planning}
+\label{sec:single-agent-planning}
+
+Single-agent path planning, the problem of computing a route between two points in a given environment subject to constraints (such as obstacles and cost functions), has been extensively studied as early as the 1950s and provides the foundation for the multi-agent path finding problem. This subsection introduces the algorithms that appear as components of the multi-agent path finding polcies evaluated in this project, and the literature on which they are based. \par
+
+\vspace{1em}
+
+Breadth-First Search (BFS) and Depth-First Search (DFS) are the most basic uninformed search algorithms for path planning \cite{cormen2022clrs}. BFS returns the path with the fewest steps from start to goal on a uniform cost grid, while DFS explores each branch to the maximum depth before backtracking. While both algorithms are complete neither is optimal, and both can be inefficient in large search spaces. they have been included in this project as a baseline for comparison with more sophiticated algorithms and to provide a measureable benchmark for which more complex algorithms can be compared against. \par
+
+\vspace{1em}
+
+The A* algorithm dominates the literature on single-agent path planning and is widely used in practice \cite{hart1968astar}. A* augments Dijkstras algorithm with a heuristic estimate of the remaining cost from each point to the goal, and is guaranteed to return an optimal path whenever this heuristic is admissible (never overestimates the true cost). By focusing the seach toward the goal rather than expanding all possible paths, therefor making A* substantially more efficient than uninformed algorithms like BFS and DFS. While retianing the optimality guaranteees. The implimentation in this project uses the euclidean distance (the straight-line distance) to the goal as its heuristic. \par
+
+\vspace{1em}
+
+While the A* algorithm is optimal for pathfinding, it doesn't account for the dynamic nature of the environment, such as moving obstacles or changing conditions. This is where the D* algorithm comes in \cite{stentz1994dstar} D* is an extension of A* that allows for replanning in dynamic environments. It maintains a cost map of the environment and updates it as new information becomes available, allowing it to efficiently replan paths when obstacles are detected or conditions change. Within the context of this project, D* lite is used which is an augmentation of D* that is more efficient and easier to implement \cite{koenig2004dstar} as it works backwards from the goal to the start making it more suitable for real-time applications (or simulations) as the end goal stays the same but the current state may change. \par
+
+\vspace{1em}
+
+The final single-agent path planning algorithm used in this project is a "greedy" algorithm. This algirthm always returns the straight line path between the start and goal, even if the path is not collision free. This algorithm is intended to provide a  baseline for comparision with other algorithms, as it is the most efficient in terms of computational time but has no guarantees of optimality or saftey. Therefor it is expected to have the shortest compute and commute times but the highest rate of collisions.\par
+
+\vspace{1em}
+
+The single-agent path planning algorithms described in this section can plan one agents path through an evenronment that is static, however they do not account for the presence of other agents within the environment. When multiple agents share an environment, and their plans interact, applying a single agent path planning algoirhtm produces plans that may conflict at execution time. Resolving these conflicts is the problem of multi-agent path finding, which is the focus of this project and is discussed in the next section. \par
+
+\subsection{Multi-agent path finding}
+\label{sec:mapf}
+
+Multi-Agent Path Finding (MAPF) extends the single-agent path planning problem to environments in which multiple agents operate and their paths must not conflict with each other. Stern et al. \cite{stern2019mapf} define the MAPF problem as a set of agents, each with an assigned start and goal location, that must find paths to their respective goals without colliding with each other. The problem is typically modelled on a discrete grid or graph in which agents move to adjacent nodes at each time step. The standard objectives are makespan, defined as the time at which the last agent reaches its goal and flowtime, defined as the sum of individual agents path costs. The variant addressed in this work is non-anonymous, lifelong, and online: UAV identities are fixed, new flight plan requests arrive dynamically during execution, and each UAV operates a depot-bound task cycle in which it travels from its home depot to a pickup location, on to a delivery location, and back to its home depot before becoming available for a new job. This depot-bound structure is a constrained form of the lifelong Multi-Agent pickup and delivery formulation introduced for warehouse automation by Ma et al. \cite{ma2017lifelong}, in which agents receive new tasks immediately upon completing a delivery; the constraint reflects the operational realities of UAS delivery, where drones typically return to a depot between flights for recharging and maintenance. \par
+
+\vspace{1em}
+
+Prioritised planning, introduced by Erdmann and Lozano-P\'erez \cite{erdmann1987multiple}, assigns agents a priority order and plans their paths sequentially, each agent treating the planned paths of higher-priority agents as dynamic obstacles. This approach is simple and efficient, and can be very effective in practice, especially when the priority order is well-chosen. However despite this method being substantially cheaper then the methods i will discuss below, it is incomplete: a higher priority agents plan can block all remaining paths for a lower priority agent, even if a valid plan could be feasable given a different ordering. One way this is resolved, is by using Priority Based Search (PBS) \cite{ma2019pbs}, which achives its completeness by searching over different orders when a conflict is detected. \par
+
+Silvers Cooperative A* (CA*) \cite{silver2005cooperative} extends the A* algorithm to work with multiple agents by using an explicit time-indexed obstacle representation called a reservation table. When an agent plans its path, it checks the table to ensure that its planned path does not conflict with the path of a previously planned agent. The same paper also intreoduced Windowed Hierarchical Cooperative A* (WHCA*), which only plans a fixed number of time steps into the future. This windown based approach allows for more efficient planning as it reduces the size of the search space and by not planning the whole path it allows for less compute intensive replanning when the environment changes. However due to this limited planning it can lead to suboptimal paths.
+
+The policies evaluated in this work are drwn from literature on uninformed search, single-agent informed and cooperative  search. The full evaluation includes the full range of this spectrum, from simple greedy to WHCA*. The inclusion of greedy, BFS and DFS are to allow for a comparison with more sophiticated algorithms. The inclusion of A* and D* are to allow for a mid range comparison with more sophiticated algorithms, and to provide a measureable benchmark for which more complex algorithms can be compared against. CA* and WHCA* are the top of the spectrum and are the widely used algorithms in the MAPF literature.
+
+\subsection{UAS Traffic Management}
+\label{sec:utm}
+
+The MAPF literature provides a range of algorithms in which multiple agents can be co-ordinated, but it does not address the specific context in which the project sits. The UAS Traffic Management (UTM) literature provides the framework for understanding the conventions, regulations and operational realities of UAS traffic in urban environments. \par
+
+\vspace{1em}
+
+The idea of UTM was first proposed by Kopardekar at NASA \cite{kopardekar2014utm} as a response to the anticipated growth of UAS operations in low-altitude operations. Kopardekar observed that current human controlled ATC infrastructure couldn't scale to the densities anticipated for commercial UAS operations. Therefor he proposed a new system of automated traffic management, in which multiple Airspace Service Providers (ASPs) would co-ordinate the flight plans of UASs within defined sectors of urban airspace. This proposal has since shaped the regulatory oversight and development of UTM systems. The FAA's UTM Concept of Operations \cite{faa2022utmconops} and the European Union's U-space framework \cite{easa2025anra} both define protocols outlined in the paper by Kopardekar, in which ASPs manage the airspace within their sector and co-ordinate with neighbouring ASPs to manage handovers of UASs between sectors. This literature provides the context for this project and the basis for the design of the simulation framework. \par
+
+\vspace{1em}
+
+A growing body of reseach appling MAPF techniques to UTM has emerged in recent years. One line of research by Ho et al. \cite{ho2019mapf, ho202decentralised, ho2022mapf} progressivly develops a range of algorithms for co-ordinating UAS traffic focusing on decentralised execution joint with centralised planning. Another line of research by Sarcharny and Henderson \cite{sarcharny2022strategic} focuses on a line-based architecture in which airspaces are restrcted to predefined corridors. Not only does this make the problem more tractable but it also  allows for segment based reservations which are more efficient then uavs reserving individual grid cells as it reduces deconfliction from a high dimentioal space time seach to a one dimentional scheduling problem. This system is similar to the one adopted in this project, however the focus of this project is on the comparative performance of different policies for co-ordinating UAS traffic, rather than the development of a single novel algorithm. \par
+
+\vspace{1em}
+
+despite active reseach within the UTM literature, the comparative performance of different policies with there Satey and efficiency trade-offs under realistic demand patterns is not yet well understood. Exisiting work tents to focus on either an optimal centralised solution and specific architeures rather then an empirical evalutation of candidate policies.  \par
+
+\subsection{Reservation-based deconfliction }
+\label{sec:reservation}
+
+Conflict avoidance in multi-agent systems can be approached at two layers. At plan time, when agensts commit in advance plans that are contructed to be conflict free, and at execution time, when agents adjust there motion reactivly in response to an observed conflict risk. Operational UTM frameowkrs combine both with strategic deconfliction policies in planning and tactical deconfliction policies that can handle the uncertainty and dynamic nature that is inherant to real world UAS operations. \cite{faa2022utmconops}. This subscetion exemaines the strategic mechanisms that motivate the design adopted in this project. \par
+
+\vspace{1em}
+
+The reservation table introduced by Silver \cite{silver2005cooperative} is the fundimental mechanism for strategic deconfliction in MAPF. It indexes vertex time pairs that represent the current and planned occupation of a vertex at a given times. Agents can query the reservation table to check for potential conflicts with other agents, and can update the table when they commit to a plan. This mechanism is used in many MAPF algorithms, including the ones evaluated in this project, as it provides a simple and efficient way to manage conflicts at plan time. \par
+
+\vspace{1em}
+
+However, as the planning horizon increases (how far into the future agents plan), the reservation table and thus the complexity of finding conflict free paths increases substntially. Phillips and likhachev \cite{phillips2011sipp} addresses this with safe interval planning by using "safe time intervals" to represent the time periods in which a vertex is free of conflicts, rather then using a reservation table that tracks the occupation of each vertex at each time step. \par
+
+\vspace{1em}
+
+The reseravtion table is also limted as it relies on agents commiting to plans in advanced, assuming they will not change and as the planning horizon increases the complexity of finding and checking for a conflict free path increases substantially, and the risk of a future event chaning the environment and invalidating the plan increases. This highlights the need for reactive deconfliction which will be discussed later in this section. \par
+
+\vspace{1em}
+
+In the context of aviation, strategic decofliction is conventonally achived by storing a flights trajectory in a flight plan. This plan is then used by ATCs to manage the airspace and ensure that flights maintain safe separation. This means that ahead of time flights are reserving segments of the airspace ensuring they will avoid conflicts by going in a route that always ensures a large enough separation with other flights. This is alalgous to the reservation table but instead of reserving grid cells they reserve segments. This is more efficeint and scalable as it allows the use of a continous collision detection algorthm that checks segmetns for collision over time, rather then checking each grid cell at each time step. This approach is very similar to the lane based architecture proposed by Sarcharny and Henderson \cite{sarcharny2022strategic}, in which the airspace is divided into predefined corridors which allows for the deconfliction problem to be reduced from a high dimensional space time search to a one dimensional scheduling problem. The reservation mechanism implemented in this project follows along with the segment based reservation allowing for a more efficient and scalable strategic deconfliction. \par
+
+\vspace{1em}
+
+Strategic deconfliction policies that use reservation tables are effective at managing conflicts at plan time, but they do not account for the uncertainty and dynamic nature of a real world environment. Factors such as weather, inaccurate flight time estimates, and unexpected obstacles can all lead to unplanned conflict points. This is why reactive deconfliction is required. It is a layer of conflict avoidance that operates while the agent is executing its plan, allowing it to adjust its motion in response to an observed conflict risk. \par
+
+\vspace{1em}
+
+Strategic deconfliction however, does not account for the dynamic and uncertain nature of real world environments, and thus reactive deconfliction is required to handle unplanned conflict points that may arise during execution. This is where a complimentary body of work on reactive deconfliction comes in, it includes algorithms such as the Velocity Obstacles (VO) \cite{fiorini1998vo}, which provide a method for agents to adjust their velocity in real time to avoid collisions with other agents. These algorithms can be used with strategic deconfliction policies and even simple single-agent path planning algorithms to provide a more robust and flexible approach to conflict avoidance. The frameowrk in this project is caplable of supporting a tactical layer through optinal policies. However, the focus of this project is on the strategic deconfliction policies and thus the evaluation of reactive deconfliction policies is left for future work. \par 
+
+\vspace{1em}
+
+\subsection{Summary}
+\label{sec:lit-summary}
+
+The literature servayed in this chapter provides the foundation for this project. It covers the three key areas of research in designing an automated traffic management system for UASs. However, it doesnt cover the specific questions that i want to answer. \par
+
+MAPF literature has provided a range of sophisticated solutions ranging from reservation based search, conflict based search and line based architectures. Each of these solutions have been produced along side rigerous proofs guaranteeing optimality, completeness and scalablity. However, the comparative performance of these policies under realistic demand patterns is not yet well understood. This project aims to fill this gap by providing a systematic evaluation of a range of candidate policies under varying demand patterns and constraints. \par
+
+The collision avoidance literature has provided a range of solutions for reactive deconfliction (such as the VO family of algorithms), they can operate in compliment with strategic planning however the methods are typically studied in isolation and thus the trade-offs between these policies when combined are not well understood . This project provides a framework that can support the evaluation of both strategic and reactive deconfliction policies, however the focus of this project is on the strategic policies and thus the evaluation of reactive policies is left for future work. \par
+
+The gap that this project address sits at the meeting point of these three areas of research. the simulation framwork developed in this project is designed to allow for a systematic evaluation of the trade-offs of using different strategic deconfliction policies under realistic demand patterns under a range of MAPF policies along with segment reservation deconfliction policies. The remainder of this report describes the design of this frameowrk in chapter 2, its implimenation and validation in chapter 3, and the results of the evaluation in chapter 4. 
