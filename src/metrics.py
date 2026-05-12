@@ -27,30 +27,15 @@ class Metrics:
         self.job_lifecycle = {}
         # uav-uav collision metrics
         self.min_separation_observed = float('inf')
-        self.flight_paths = {}  # uav_id -> list of positions
         # collision events
         self.collision_events = []
         # safety violations
         self.safety_violation_events = []  # list of (uav_id_a, uav_id_b, distance)
-        # uav-obstacle collision metric
-        self.obstacle_collision_events = []  # list of (uav_id, obstacle_id, distance)
-        self.airspace_violation_events = []  # list of (uav_id, airspace_id, violation_type)
 
-    def record_job_request(self):
-        self.jobs_requested += 1
-
-    def record_path(self, uav_id, pos: GlobalPosition):
-        # record position in global coordinates
-        if uav_id not in self.flight_paths: 
-            self.flight_paths[uav_id] = []
-        self.flight_paths[uav_id].append(pos.as_array())
-
-    def record_delivery_phase(self, duration):
-        self.completed_deliveries += 1
-        self.delivery_times.append(duration)
-
-    def record_return_phase(self, duration):
-        self.return_times.append(duration)
+        # reservation metrics
+        self.reservation_attempts = 0
+        self.reservations_granted = 0
+        self.reservations_denied = 0
 
     def record_collision(self, distance, uav_id_a=None, uav_id_b=None):
         self.collision_events.append((uav_id_a, uav_id_b, float(distance)))
@@ -62,13 +47,12 @@ class Metrics:
         if distance < self.min_separation_observed:
             self.min_separation_observed = distance
 
-    def record_obstacle_collision(self, uav_id, obstacle_id, position: GlobalPosition):
-        # record obstacle collision with global position
-        self.obstacle_collision_events.append((uav_id, obstacle_id, position.as_array() if hasattr(position, 'as_array') else position))
-
-    def record_airspace_violation(self, uav_id, airspace_id, position: GlobalPosition):
-        # record airspace violation with global position
-        self.airspace_violation_events.append((uav_id, airspace_id, position.as_array() if hasattr(position, 'as_array') else position))
+    def record_reservation_attempt(self, granted: bool):
+        self.reservation_attempts += 1
+        if granted:
+            self.reservations_granted += 1
+        else:
+            self.reservations_denied += 1
 
     # per-depot and per-airspace job tracking
     def record_job_request_at_depot(self, depot_id, origin_airspace, dest_airspace, job_id, creation_time):
@@ -228,15 +212,26 @@ class Metrics:
         else:
             separation_text = round(self.min_separation_observed, 2)
 
+        # completion rate over all requested jobs
+        if self.jobs_requested > 0:
+            completion_rate = round(self.completed_deliveries / self.jobs_requested, 3)
+        else:
+            completion_rate = 0.0
+
         # dict 
         return {
             "total jobs requested": self.jobs_requested,
             "completed deliveries": self.completed_deliveries,
+            "failed deliveries": self.failed_deliveries,
+            "completion rate": completion_rate,
             "avg delivery time (s)": round(avg_delivery, 2),
             "avg return time (s)": round(avg_return, 2),
             "total safety violations": len(self.safety_violation_events),
             "total collisions": len(self.collision_events),
-            "min separation (m)": separation_text
+            "min separation (m)": separation_text,
+            "reservation attempts": self.reservation_attempts,
+            "reservations granted": self.reservations_granted,
+            "reservations denied": self.reservations_denied,
         }
 
     def save_to_csv(self, filename="run_results.csv"):
@@ -249,15 +244,19 @@ class Metrics:
             
             # write data 
             writer.writerow(["SECTION:", "RAW MISSION DATA"])
-            writer.writerow(["Mission_ID", "Delivery_Time_s", "Return_Time_s"])
-            
-            for i in range(len(self.delivery_times)):
-                mission_id = i + 1
-                d_time = self.delivery_times[i]
-                r_time = "N/A"
-                if i < len(self.return_times):
-                    r_time = self.return_times[i]
-                writer.writerow([mission_id, d_time, r_time])
+            writer.writerow(["Mission_ID", "Job_ID", "Origin_Airspace", "Dest_Airspace", "Status", "Delivery_Time_s"])
+
+            # for each job
+            mission_id = 0
+            for job_id, info in self.job_lifecycle.items():
+                if info['status'] not in ('COMPLETED', 'FAILED'):
+                    continue
+                mission_id += 1
+                if info['status'] == 'COMPLETED' and info.get('started_time') is not None and info.get('completed_time') is not None:
+                    d_time = info['completed_time'] - info['started_time']
+                else:
+                    d_time = "N/A"
+                writer.writerow([mission_id, job_id, info['origin_airspace'], info['dest_airspace'], info['status'], d_time])
 
             # add empty lines to separate sections
             writer.writerow([])

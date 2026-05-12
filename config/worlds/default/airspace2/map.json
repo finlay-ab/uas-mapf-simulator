@@ -3,7 +3,7 @@
   "width": 500,
   "height": 500,
   "resolution": 1.0,
-  "potential_field": true,
+  "potential_field": false,
   "potential_strength": 15,
   "depots": [
     {
@@ -137,6 +137,52 @@
       {
         "x": 4,
         "y": 300
+      }
+    ]
+  },
+  {
+    "id": "a2_out_to_a4",
+    "x": 250,
+    "y": 499,
+    "airspace_id": "airspace2",
+    "target_airspace_id": "airspace4",
+    "target_gate_id": "a4_in_from_a2",
+    "capacity": 2,
+    "queue_positions": [
+      {
+        "x": 250,
+        "y": 498
+      },
+      {
+        "x": 250,
+        "y": 497
+      },
+      {
+        "x": 250,
+        "y": 496
+      }
+    ]
+  },
+  {
+    "id": "a2_in_from_a4",
+    "x": 350,
+    "y": 499,
+    "airspace_id": "airspace2",
+    "target_airspace_id": "airspace4",
+    "target_gate_id": "a4_out_to_a2",
+    "capacity": 2,
+    "queue_positions": [
+      {
+        "x": 350,
+        "y": 498
+      },
+      {
+        "x": 350,
+        "y": 497
+      },
+      {
+        "x": 350,
+        "y": 496
       }
     ]
   }

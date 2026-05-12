@@ -11,6 +11,18 @@
       "config_file": "config/worlds/default/airspace2/config.json",
       "map_file": "config/worlds/default/airspace2/map.json",
       "fleet_file": "config/worlds/default/airspace2/fleet.json"
+    },
+    {
+      "id": "airspace3",
+      "config_file": "config/worlds/default/airspace3/config.json",
+      "map_file": "config/worlds/default/airspace3/map.json",
+      "fleet_file": "config/worlds/default/airspace3/fleet.json"
+    },
+    {
+      "id": "airspace4",
+      "config_file": "config/worlds/default/airspace4/config.json",
+      "map_file": "config/worlds/default/airspace4/map.json",
+      "fleet_file": "config/worlds/default/airspace4/fleet.json"
     }
     
   ],
@@ -26,6 +38,42 @@
     "from_gate_id": "a2_out_to_a1",
     "to_airspace": "airspace1",
     "to_gate_id": "a1_in_from_a2"
+  },
+  {
+    "from_airspace": "airspace1",
+    "from_gate_id": "a1_out_to_a3",
+    "to_airspace": "airspace3",
+    "to_gate_id": "a3_in_from_a1"
+  },
+  {
+    "from_airspace": "airspace3",
+    "from_gate_id": "a3_out_to_a1",
+    "to_airspace": "airspace1",
+    "to_gate_id": "a1_in_from_a3"
+  },
+  {
+    "from_airspace": "airspace2",
+    "from_gate_id": "a2_out_to_a4",
+    "to_airspace": "airspace4",
+    "to_gate_id": "a4_in_from_a2"
+  },
+  {
+    "from_airspace": "airspace4",
+    "from_gate_id": "a4_out_to_a2",
+    "to_airspace": "airspace2",
+    "to_gate_id": "a2_in_from_a4"
+  },
+  {
+    "from_airspace": "airspace3",
+    "from_gate_id": "a3_out_to_a4",
+    "to_airspace": "airspace4",
+    "to_gate_id": "a4_in_from_a3"
+  },
+  {
+    "from_airspace": "airspace4",
+    "from_gate_id": "a4_out_to_a3",
+    "to_airspace": "airspace3",
+    "to_gate_id": "a3_in_from_a4"
   }
   ]
 }

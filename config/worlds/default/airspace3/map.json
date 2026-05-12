@@ -1,0 +1,76 @@
+{
+  "id": "northwest_airspace",
+  "width": 400,
+  "height": 400,
+  "resolution": 1.0,
+  "potential_field": false,
+  "potential_strength": 10,
+  "depots": [
+    {
+      "id": "north_hub",
+      "x": 40,
+      "y": 330,
+      "operation_capacity": 1
+    },
+    {
+      "id": "south_hub",
+      "x": 70,
+      "y": 50,
+      "operation_capacity": 1
+    }
+  ],
+  "obstacles": [
+    {
+      "type": "obstacle",
+      "x_min": 120,
+      "y_min": 120,
+      "x_max": 200,
+      "y_max": 200
+    },
+    {
+      "type": "restricted",
+      "x_min": 230,
+      "y_min": 280,
+      "x_max": 320,
+      "y_max": 360
+    }
+  ],
+  "gates": [
+    {
+      "id": "a3_in_from_a1",
+      "x": 150,
+      "y": 1,
+      "airspace_id": "airspace3",
+      "target_airspace_id": "airspace1",
+      "target_gate_id": "a1_out_to_a3",
+      "capacity": 2
+    },
+    {
+      "id": "a3_out_to_a1",
+      "x": 260,
+      "y": 1,
+      "airspace_id": "airspace3",
+      "target_airspace_id": "airspace1",
+      "target_gate_id": "a1_in_from_a3",
+      "capacity": 2
+    },
+    {
+      "id": "a3_out_to_a4",
+      "x": 399,
+      "y": 170,
+      "airspace_id": "airspace3",
+      "target_airspace_id": "airspace4",
+      "target_gate_id": "a4_in_from_a3",
+      "capacity": 2
+    },
+    {
+      "id": "a3_in_from_a4",
+      "x": 399,
+      "y": 250,
+      "airspace_id": "airspace3",
+      "target_airspace_id": "airspace4",
+      "target_gate_id": "a4_out_to_a3",
+      "capacity": 2
+    }
+  ]
+}

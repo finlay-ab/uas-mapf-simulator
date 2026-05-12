@@ -1,0 +1,20 @@
+{
+  "sim_time": 1000.0,
+  "world_config": "config/worlds/default/world_manifest.json",
+  "lambda_rate": 0.083,
+  "max_speed": 5.0,
+  "safety_radius": 2.5,
+  "policy": "GREEDY",
+  "wrapper": "NONE",
+  "connectivity": 4,
+  "reservation_horizon": 200,
+  "whca_window_size": 24,
+  "whca_max_windows": 12,
+  "priority_mode": "hash",
+  "priority_buckets": 4,
+  "local_avoidance_on_predicted_collision": false,
+  "local_avoidance_mode": "none",
+  "log_file": "simulation.log",
+  "csv_file": "run_results.csv",
+  "seed": null
+}

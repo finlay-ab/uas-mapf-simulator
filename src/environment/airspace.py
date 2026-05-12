@@ -7,7 +7,7 @@ from src.environment.spatial import SpatialManager
 import numpy as np
 
 from src.schemas import Job, JobStatus, Waypoint, WayPointType
-from src.physics import GlobalPosition, LocalPosition
+from src.physics import GlobalPosition, GridPosition, LocalPosition
 import simpy
 import logging
 
@@ -18,7 +18,6 @@ class Airspace:
         self.id = airspace_id
         self.config = self._load_config(config_file)
         self.origin = GlobalPosition(*self.config.get('origin', [0.0, 0.0]))
-        self.job_spawn_rate = self.config.get('job_spawn_rate', 1.0)
 
         self.env = env
         self.policy = policy
@@ -28,8 +27,15 @@ class Airspace:
         self.metrics = metrics
 
         self.map = self._load_map(map_file)
-        self.spatial_manager = SpatialManager(10, metrics=metrics) 
 
+        self.spatial_manager = SpatialManager(
+            self.cfg.safety_radius,
+            metrics=metrics,
+            env=self.env,
+            grid_map=self.map,
+            origin=self.origin,
+        )
+    
         self.job_queues = {}
         # create a job queue for each depot and store in dict in airspaces
         for depot in self.map.depots:
@@ -45,7 +51,7 @@ class Airspace:
         for gate in self.map.gates:
             self.gate_resources[gate.id] = simpy.Resource(self.env, capacity=gate.capacity)
 
-        log.info(f"Airspace {self.id} initialized with {len(self.map.depots)} depots and job spawn rate {self.job_spawn_rate}.")
+        log.info(f"Airspace {self.id} initialized with {len(self.map.depots)} depots and inter-airspace probability {self.inter_airspace_probability}.")
 
         self.fleet = self._load_fleet(fleet_file, self.map, self.cfg)
         
@@ -99,7 +105,7 @@ class Airspace:
         return fleet
 
     def _job_generator(self, depot_id):
-        log.info(f"Starting job generator for depot {depot_id} in airspace {self.id} with spawn rate {self.job_spawn_rate}.")
+        log.info(f"Starting job generator for depot {depot_id} in airspace {self.id}.")
         while True:
             # wait poisson interarrival time
             yield self.env.timeout(random.expovariate(self.cfg.lambda_rate/ len(self.map.depots)))
@@ -107,8 +113,8 @@ class Airspace:
             # default target to same airspace
             destination_airspace = self.id
 
-            # pick different airspace at job swpan rate probabilty
-            if random.random() < self.job_spawn_rate:
+            # pick different airspace at inter airspace probability
+            if random.random() < self.inter_airspace_probability:
                 other_airspaces = [
                     a for a in self.world_manager.get_all_airspaces().values()
                     if a.id != self.id
@@ -118,14 +124,18 @@ class Airspace:
 
             destination_airspace_obj = self.world_manager.get_airspace(destination_airspace)
             if destination_airspace_obj is None:
-                raise ValueError(f"Unknown destination airspace id: {destination_airspace}")
+                log.warning("unknown destination airspace id: %s", destination_airspace)
+                continue
 
-            # random dropoff in destination airspace bounds
-            x = random.randrange(destination_airspace_obj.map.grid_width)
-            y = random.randrange(destination_airspace_obj.map.grid_height)
-
-            destination = LocalPosition(x, y)
-            destination = destination_airspace_obj.local_to_world(destination)
+            # sample a traversable destination cell anywhere on the destination map.
+            # if no path exists at job pickup time the uav fails the job cleanly via recovery
+            destination = self._sample_destination(destination_airspace_obj)
+            if destination is None:
+                log.warning(
+                    "discarding job from depot %s in airspace %s: no traversable destination found in airspace %s",
+                    depot_id, self.id, destination_airspace,
+                )
+                continue
 
             # create job request and put in queue
             job = Job(
@@ -149,7 +159,67 @@ class Airspace:
             )
 
             yield self.job_queues[depot_id].put(job)
-           
+            
+    # get random delivery point
+    def _sample_destination(self, dest_airspace):
+        grid_w = dest_airspace.map.grid_width
+        grid_h = dest_airspace.map.grid_height
+
+        for _ in range(30):
+            x = random.randint(0, grid_w - 1)
+            y = random.randint(0, grid_h - 1)
+            if not dest_airspace.map.is_traversable(GridPosition(x, y), self.cfg.safety_radius):
+                continue
+            return dest_airspace.local_to_world(LocalPosition(x + 0.5, y + 0.5))
+
+        return None
+
+    # fixed probabiliy
+    @property
+    def inter_airspace_probability(self):
+        return self.config.get('inter_airspace_probability', self.config.get('job_spawn_rate', 0.0))
+
+    # prunes waypoints that are linear to eachother
+    def _normalize_path(self, path):
+        # make sure everythin is in pos format
+        normalized_path = []
+        for position in path:
+            if isinstance(position, LocalPosition):
+                normalized_path.append(position)
+                continue
+
+            if hasattr(position, "as_array"):
+                position = position.as_array()
+
+            if isinstance(position, np.ndarray) or isinstance(position, (tuple, list)):
+                position_array = np.asarray(position, dtype=float)
+                normalized_path.append(LocalPosition(float(position_array[0]), float(position_array[1])))
+                continue
+
+            raise TypeError(f"planner returned unsupported position type: {type(position)}")
+
+        if len(normalized_path) <= 2:
+            return normalized_path
+
+        pruned = [normalized_path[0]]
+        for i in range(1, len(normalized_path) - 1):
+            prev_pt = pruned[-1]
+            mid_pt = normalized_path[i]
+            next_pt = normalized_path[i + 1]
+
+            ax = mid_pt.x - prev_pt.x
+            ay = mid_pt.y - prev_pt.y
+            bx = next_pt.x - mid_pt.x
+            by = next_pt.y - mid_pt.y
+
+            # cross product to check if points are collinear
+            cross = ax * by - ay * bx
+            if abs(cross) > 1e-6:
+                pruned.append(mid_pt)
+
+        pruned.append(normalized_path[-1])
+        return pruned
+
     def local_to_world(self, local_position: LocalPosition) -> GlobalPosition:
         return GlobalPosition(
             local_position.x * self.map.resolution + self.origin.x,
@@ -161,7 +231,7 @@ class Airspace:
             (global_position.x - self.origin.x) / self.map.resolution,
             (global_position.y - self.origin.y) / self.map.resolution,
         )
-    
+
     def is_inside(self, position):
         if isinstance(position, GlobalPosition):
             position = self.world_to_local(position)
@@ -182,7 +252,7 @@ class Airspace:
 
     def remove_uav(self, uav):
         self.fleet.remove(uav)
-    
+
 
     def get_waypoints(self, current_position: GlobalPosition, goal_position: GlobalPosition, current_airspace_id, goal_airspace_id) -> list[Waypoint]:
         # check pos are global posittions
@@ -190,17 +260,15 @@ class Airspace:
             raise TypeError("current_position and goal_position must be GlobalPosition")
         
         # return list of waypoints from world_manager to get to goal airspace and then to goal position
-        #               #     def get_path(self, start_airspace_id, end_airspace_id, current_pos: GlobalPosition, target_pos: GlobalPosition, target_type: WayPointType) -> list[Waypoint]:
-
         route = self.world_manager.get_path(current_airspace_id, goal_airspace_id, current_position, goal_position)
         
         # check route is valid
         if route is None or len(route) < 2:
-            raise ValueError("no route found from current airspace to goal airspace.")
+            return None
         
         return route
 
-    def plan_leg(self, current_waypoint: Waypoint, goal_waypoint: Waypoint):
+    def plan_leg(self, current_waypoint: Waypoint, goal_waypoint: Waypoint, uav_id=None):
         # check pos are Waypoint
         if not isinstance(current_waypoint, Waypoint) or not isinstance(goal_waypoint, Waypoint):
             raise TypeError("current_waypoint and goal_waypoint must be Waypoint")
@@ -225,34 +293,35 @@ class Airspace:
             raise ValueError("invalid handover: should be handled by HANDOVER state")
 
         # en route
-        # if current_waypoint.type == WayPointType.EN_ROUTE and goal_waypoint.type != WayPointType.HANDOVER_IN and goal_waypoint.type != WayPointType.HANDOVER_OUT:
-        return self.plan_path(current_waypoint.position, goal_waypoint.position)
-        
-        # invalid waypoint pair
-        raise ValueError("invalid waypoint pair: current_waypoint type {} and goal_waypoint type {}".format(current_waypoint.type, goal_waypoint.type))
-        
-         
+        return self.plan_path(current_waypoint.position, goal_waypoint.position, uav_id=uav_id)
 
-    def plan_path(self, current_position: GlobalPosition, goal_position: GlobalPosition):
-        # check pos are global posittions 
+    def plan_path(self, current_position: GlobalPosition, goal_position: GlobalPosition, uav_id=None):
+        # check pos are global poses
         if not isinstance(current_position, GlobalPosition) or not isinstance(goal_position, GlobalPosition):
             raise TypeError("current_position and goal_position must be GlobalPosition")
 
         # check pos are inside airspace
         if not self.is_inside(current_position) or not self.is_inside(goal_position):
-            raise ValueError("current position or goal position is outside of airspace bounds.")
+            log.warning("plan_path: position outside airspace bounds (start=%s goal=%s)", current_position, goal_position)
+            return None
         
         # convert to local positions
         local_start = self.world_to_local(current_position)
         local_goal = self.world_to_local(goal_position)
 
-        # plan path in current airspace
-        path = self.policy.plan_path(local_start, local_goal, self.spatial_manager)
+        # ensure planner has access to the current airspace map
+        self.policy.grid_map = self.map
+        if hasattr(self.policy, "base_policy"):
+            self.policy.base_policy.grid_map = self.map
 
+        # plan path in current airspace
+        path = self.policy.plan_path(local_start, local_goal, self.spatial_manager, uav_id)
+
+        # planner couldnt find a path
         if path is None or len(path) < 2:
-            raise ValueError("no path found from current position to goal position within airspace.")
+            return None
         
-        return path
+        return self._normalize_path(path)
         
     def request_gate(self, gate_id):
         if gate_id not in self.gate_resources:

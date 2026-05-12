@@ -23,10 +23,58 @@ def create_planner(config):
         )
     elif config.policy == PolicyType.OCCUPANCY_ASTAR:
         base_planner = OccupancyAStarPolicy(
-            grid_map,
+            None,
             config.max_speed,
             config.safety_radius,
             connectivity=config.connectivity,
+        )
+    elif config.policy == PolicyType.DFS:
+        base_planner = DFSPathPolicy(
+            None,
+            config.max_speed,
+            config.safety_radius,
+            connectivity=config.connectivity,
+        )
+    elif config.policy == PolicyType.BFS:
+        base_planner = BFSPathPolicy(
+            None,
+            config.max_speed,
+            config.safety_radius,
+            connectivity=config.connectivity,
+        )
+    elif config.policy == PolicyType.PRIORITIZED_ASTAR:
+        base_planner = PrioritizedAStarPolicy(
+            None,
+            config.max_speed,
+            config.safety_radius,
+            connectivity=config.connectivity,
+            time_step=config.reservation_time_step,
+            max_time_steps=config.reservation_horizon,
+            priority_mode=config.priority_mode,
+            priority_buckets=config.priority_buckets,
+        )
+    elif config.policy == PolicyType.COOPERATIVE_ASTAR:
+        base_planner = CooperativeAStarPolicy(
+            None,
+            config.max_speed,
+            config.safety_radius,
+            connectivity=config.connectivity,
+            time_step=config.reservation_time_step,
+            max_time_steps=config.reservation_horizon,
+            priority_mode=config.priority_mode,
+            priority_buckets=config.priority_buckets,
+        )
+    elif config.policy == PolicyType.WHCA:
+        base_planner = WHCAPolicy(
+            None,
+            config.max_speed,
+            config.safety_radius,
+            connectivity=config.connectivity,
+            time_step=config.reservation_time_step,
+            window_size=config.whca_window_size,
+            max_windows=config.whca_max_windows,
+            priority_mode=config.priority_mode,
+            priority_buckets=config.priority_buckets,
         )
     else:
         raise ValueError(f"unknown policy type: {config.policy}")
@@ -38,11 +86,3 @@ def create_planner(config):
         return VOWrapper(base_planner, config.safety_radius, active=True)
     else:
         raise ValueError(f"unknown wrapper type: {config.wrapper}")
-
-
-    #    log.info(f"Initialized Planner: {type(self.planner).__name__}")
-    #    if hasattr(self.planner, 'active'):
-    #        if self.planner.active is True:
-    #            log.info("VO safety wrapper is active")
-    #        else:
-    #            log.info("VO safety wrapper is disabled")
