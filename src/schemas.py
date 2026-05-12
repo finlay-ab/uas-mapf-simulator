@@ -23,10 +23,6 @@ class PathRecoveryAction(Enum):
     RETURN_TO_PATH = auto()
     REPLAN = auto()
 
-class PathRecoveryAction(Enum):
-    RETURN_TO_PATH = auto()
-    REPLAN = auto()
-
 
 class JobStatus(Enum):
     PENDING = auto()
@@ -36,7 +32,7 @@ class JobStatus(Enum):
 
 @dataclass
 class Job:
-    id: int
+    id: str
     origin_airspace: str
     origin_depot: str
     destination_airspace: str
@@ -55,7 +51,7 @@ class AirspaceType(Enum):
 
 @dataclass(frozen=True)
 class Depot:
-    id: int
+    id: str
     grid_position: GridPosition
 
 class WayPointType(Enum):
