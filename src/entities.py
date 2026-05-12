@@ -4,6 +4,7 @@ import logging
 import json
 from .physics import Velocity
 from .schemas import JobStatus, WayPointType, UAV_SEGMENT
+from .helpers import get_xy, to_array
 
 from src.physics import GlobalPosition, LocalPosition, Velocity
 
@@ -55,12 +56,17 @@ class UAV:
 
         # start at depot
         self.depot_pos: GlobalPosition = airspace.local_to_world(self.grid_map.get_depot_position(depot_owner_id))
-        self.pos: GlobalPosition = airspace.local_to_world(self.depot_pos)
+        self.pos: GlobalPosition = self.depot_pos
         self.state = UAVState.IDLE_DEPOT
 
         # path planning
         self.current_path = []
         self.path_index = 0
+
+        # replan vars 
+        self.replan_attempts = 0
+        self.emergency_attempts = 0
+        self._last_partial_distance = float("inf")
 
 
         # start process
@@ -76,16 +82,22 @@ class UAV:
             for key, value in config_data.items():
                 setattr(self, key, value)
     
+    # returns True if a valid multi-airspace route was found
     def get_global_route(self):
-
         self.route = self.airspace.get_waypoints(self.pos, self.current_job.target_pos, self.airspace.id, self.current_job.destination_airspace)
         self.route_index = 0
-
         if self.route is None or len(self.route) < 2:
-            raise ValueError("invalid route returned by policy: {}".format(self.route))
+            return False
+        return True
 
     def run(self):
+        last_state_synced = None
         while True:
+            # update spartial manager
+            if self.sm is not None and self.state != last_state_synced:
+                self.sm.update_state(self.uav_id, self.state)
+                last_state_synced = self.state
+
             match self.state:
                 case UAVState.IDLE_DEPOT:
                     yield from self._idle_depot()
@@ -101,6 +113,8 @@ class UAV:
                     yield from self._landing()
                 case UAVState.HANDOVER:
                     yield from self._handover()
+                case UAVState.EMERGENCY:
+                    yield from self._emergency()
                 case _:
                     raise ValueError(f"Unknown UAV state: {self.state}")   
     
@@ -109,25 +123,43 @@ class UAV:
         # wait for job
         job = yield self.job_queue.get()
 
-        # assign job and change state to takeoff
+        # assign job 
         self.current_job = job
         self.job_start_time = self.env.now
         self.current_job.job_start_time = self.env.now
-        
-        # record job transition to IN_PROGRESS
+
+        # if no route fail job
+        if not self.get_global_route():
+            log.warning("uav %s could not plan global route for job %s, failing", self.uav_id, job.id)
+            self.airspace.metrics.record_job_failed_at_depot(
+                depot_id=self.depot_owner_id,
+                job_id=job.id,
+                reason="no_global_route",
+                failed_time=self.env.now
+            )
+            self.current_job = None
+            return
+
+        # update job status
         self.airspace.metrics.record_job_in_progress_at_depot(
             job_id=self.current_job.id,
             started_time=self.env.now
         )
         
         log.info("uav %s assigned job %s (%s -> %s)", self.uav_id, job.id, job.origin_airspace, job.destination_airspace)
-        
-        # get plan
-        self.get_global_route()
 
         if self.route[self.route_index].type != WayPointType.TAKEOFF:
-            raise ValueError("first waypoint in route must be TAKEOFF type")
+            log.error("uav %s first waypoint not TAKEOFF (got %s)", self.uav_id, self.route[self.route_index].type)
+            self.airspace.metrics.record_job_failed_at_depot(
+                depot_id=self.depot_owner_id,
+                job_id=job.id,
+                reason="invalid_route",
+                failed_time=self.env.now
+            )
+            self.current_job = None
+            return
 
+        self.replan_attempts = 0
         self.state = UAVState.TAKEOFF
 
     # reserve a depot slot before departure
@@ -165,56 +197,209 @@ class UAV:
                 self.state = UAVState.LANDING
                 return
             else:
-                raise ValueError("route index out of bounds for current route")
-        
-        if self.route[self.route_index].type == WayPointType.HANDOVER_OUT and self.route[self.route_index + 1].type == WayPointType.HANDOVER_IN:
+                log.error("uav %s route index %d out of bounds %d, going EMERGENCY", self.uav_id, self.route_index, len(self.route))
+                self.state = UAVState.EMERGENCY
+                return
+
+        next_wp = self.route[self.route_index + 1]
+
+        if self.route[self.route_index].type == WayPointType.HANDOVER_OUT and next_wp.type == WayPointType.HANDOVER_IN:
             # initiate handover
             self.state = UAVState.HANDOVER
             return
-        
-        # execute leg to next waypoint
-        self.current_path = self.airspace.plan_leg(self.route[self.route_index], self.route[self.route_index + 1])
+
+        # try to plan to next wp
+        try:
+            self.current_path = self.airspace.plan_path(self.pos, next_wp.position, uav_id=self.uav_id)
+        except Exception as exc:
+            log.warning("uav %s plan_path failed: %s", self.uav_id, exc)
+            self.current_path = None
+
+        # if no path then hover and wait for next replan
+        if self.current_path is None or len(self.current_path) < 2:
+            self.replan_attempts += 1
+            if self.replan_attempts >= self.cfg.max_recovery_attempts:
+                log.warning("uav %s replan attempts exhausted, going EMERGENCY", self.uav_id)
+                self.state = UAVState.EMERGENCY
+            else:
+                self.state = UAVState.HOVER_WAIT
+            return
+
+        # got a path, reset retry counter
+        self.replan_attempts = 0
         self.path_index = 1
 
-        local_pos = self.airspace.world_to_local(self.pos)
-        
         while self.path_index < len(self.current_path):
+            local_pos = self.airspace.world_to_local(self.pos)
             flew = yield from self._execute_flight(local_pos, self.current_path[self.path_index])
             if not flew:
-                self.state = UAVState.BLOCKED
+                log.warning("uav %s flight blocked, hovering", self.uav_id)
+                self.state = UAVState.HOVER_WAIT
                 return
             self.path_index += 1
 
-        # handle arrival at next waypoint
-        if self.route[self.route_index + 1].type == WayPointType.DELIVERY:
+        # check if wp is reached or if replan is needed
+        current_xy = to_array(self.pos)
+        target_xy = to_array(next_wp.position)
+        distance_to_wp = float(np.linalg.norm(target_xy - current_xy))
+
+        if distance_to_wp > self.cfg.waypoint_arrival_threshold:
+            # prevent looping/ crashing by ensuring progress is made
+            if distance_to_wp >= self._last_partial_distance - 0.5:
+                self.replan_attempts += 1
+                if self.replan_attempts >= self.cfg.max_recovery_attempts:
+                    log.warning("uav %s partial path not making progress, going EMERGENCY", self.uav_id)
+                    self._last_partial_distance = float("inf")
+                    self.state = UAVState.EMERGENCY
+                    return
+                self._last_partial_distance = distance_to_wp
+                self.state = UAVState.HOVER_WAIT
+                return
+
+            # making progress, continue replanning toward the waypoint
+            self._last_partial_distance = distance_to_wp
+            self.state = UAVState.EN_ROUTE
+            return
+        
+        self._last_partial_distance = float("inf")
+
+        # reached the waypoint
+        if next_wp.type == WayPointType.DELIVERY:
             self.state = UAVState.DELIVERING
-        elif self.route[self.route_index + 1].type == WayPointType.LANDING:
+        elif next_wp.type == WayPointType.LANDING:
             self.state = UAVState.LANDING
-        elif self.route[self.route_index + 1].type == WayPointType.HANDOVER_IN:
+        elif next_wp.type == WayPointType.HANDOVER_IN:
             # invalid state, should have been handled above
-            raise ValueError("invalid route: HANDOVER_IN waypoint without following HANDOVER_OUT")
+            log.error("uav %s unexpected HANDOVER_IN waypoint, going EMERGENCY", self.uav_id)
+            self.state = UAVState.EMERGENCY
+            return
         else:
             self.state = UAVState.EN_ROUTE
 
         self.route_index += 1
-    
+
+    # hold position
+    def _hover_wait(self):
+        yield self.env.timeout(self.cfg.hover_timeout)
+        self.state = UAVState.EN_ROUTE
+
+    # abort job
+    def _emergency(self):
+        # if grounded then wait indefinitely
+        if getattr(self, "grounded", False):
+            yield self.env.timeout(self.cfg.sim_time)
+            return
+
+        # only fail the job once even if emergency repeats
+        if self.current_job is not None:
+            log.warning("uav %s aborting job %s, attempting to return home", self.uav_id, self.current_job.id)
+            self.airspace.metrics.record_job_failed_at_depot(
+                depot_id=self.depot_owner_id,
+                job_id=self.current_job.id,
+                reason="path_unreachable",
+                failed_time=self.env.now
+            )
+            self.current_job = None
+            self.emergency_attempts = 0
+
+        # try to return to home airspace
+        if not self.airspace.is_inside(self.depot_pos):
+            self.emergency_attempts += 1
+            if self.emergency_attempts >= self.cfg.max_recovery_attempts:
+                log.warning("uav %s stranded in foreign airspace %s, grounding in place", self.uav_id, self.airspace.id)
+                yield from self._ground_in_place()
+                return
+            log.warning("uav %s stranded in foreign airspace %s, hovering", self.uav_id, self.airspace.id)
+            yield self.env.timeout(self.cfg.hover_timeout)
+            return
+
+        # check if above depot and can land safely
+        current_xy = to_array(self.pos)
+        depot_xy = to_array(self.depot_pos)
+        distance_to_depot = float(np.linalg.norm(depot_xy - current_xy))
+        if distance_to_depot <= self.cfg.waypoint_arrival_threshold:
+            self.replan_attempts = 0
+            self.emergency_attempts = 0
+            self.state = UAVState.LANDING
+            return
+
+        # try to path home
+        try:
+            home_path = self.airspace.plan_path(self.pos, self.depot_pos, uav_id=self.uav_id)
+        except Exception as exc:
+            log.warning("uav %s emergency plan home failed: %s", self.uav_id, exc)
+            home_path = None
+
+        if home_path is None or len(home_path) < 2:
+            self.emergency_attempts += 1
+            if self.emergency_attempts >= self.cfg.max_recovery_attempts:
+                log.warning("uav %s cannot find path home after %d attempts, grounding in place", self.uav_id, self.emergency_attempts)
+                yield from self._ground_in_place()
+                return
+            log.warning("uav %s cannot find path home, hovering (attempt %d)", self.uav_id, self.emergency_attempts)
+            yield self.env.timeout(self.cfg.hover_timeout)
+            return
+
+        # fly home along the recovery path
+        self.current_path = home_path
+        self.path_index = 1
+        while self.path_index < len(self.current_path):
+            local_pos = self.airspace.world_to_local(self.pos)
+            flew = yield from self._execute_flight(local_pos, self.current_path[self.path_index])
+            if not flew:
+                log.warning("uav %s emergency flight blocked, hovering", self.uav_id)
+                yield self.env.timeout(self.cfg.hover_timeout)
+                return
+            self.path_index += 1
+
+        # at home
+        log.info("uav %s reached home depot in emergency, landing", self.uav_id)
+        self.replan_attempts = 0
+        self.emergency_attempts = 0
+        self.state = UAVState.LANDING
+
+    # UAV emergancy landing!
+    def _ground_in_place(self):
+        if self.sm is not None:
+            # remove from active segments
+            if self.uav_id in self.sm.active_segments:
+                self.sm.deregister_segment(self.uav_id, self.pos)
+            # update state in sm
+            self.sm.update_state(self.uav_id, UAVState.IDLE_DEPOT)
+        # make sure dispatch doesnt assign new jobs
+        self.grounded = True
+        log.warning("uav %s grounded; will not take further jobs", self.uav_id)
+        yield self.env.timeout(self.cfg.sim_time)
+
     def _delivering(self):
 
         # check wp is delivery 
         if self.route[self.route_index].type != WayPointType.DELIVERY:
-            raise ValueError("current waypoint is not a delivery point for delivering state")
+            # routing error
+            log.error("uav %s entered DELIVERING but waypoint is %s, going EMERGENCY", self.uav_id, self.route[self.route_index].type)
+            self.state = UAVState.EMERGENCY
+            return
         
-        # check at wp
-        if np.linalg.norm(np.array([self.pos.x - self.route[self.route_index].position.x, self.pos.y - self.route[self.route_index].position.y])) > 1.0:
-            log.info(
-                "uav %s delivery mismatch: pos=(%.1f, %.1f) target=(%.1f, %.1f)",
+        # check at wp. if we are not actually here, drop back to en route so the planner can try again
+        current_xy = to_array(self.pos)
+        target_xy = to_array(self.route[self.route_index].position)
+        distance_to_target = np.linalg.norm(target_xy - current_xy)
+
+        if distance_to_target > self.cfg.waypoint_arrival_threshold:
+            current_x, current_y = get_xy(self.pos)
+            target_x, target_y = get_xy(self.route[self.route_index].position)
+            log.warning(
+                "uav %s delivery mismatch: pos=(%.1f, %.1f) target=(%.1f, %.1f), going back to EN_ROUTE",
                 self.uav_id,
-                self.pos.x,
-                self.pos.y,
-                self.route[self.route_index].position.x,
-                self.route[self.route_index].position.y,
+                current_x,
+                current_y,
+                target_x,
+                target_y,
             )
-            raise ValueError("UAV is not at delivery waypoint position for delivering state")
+            # roll back to the previous waypoint so en_route will replan to the delivery point
+            self.route_index -= 1
+            self.state = UAVState.EN_ROUTE
+            return
 
         # simulate delivery time
         yield self.env.timeout(self.delivery_time_s)
@@ -270,7 +455,9 @@ class UAV:
     def _handover(self):
         # check current wp is handover out and next wp is handover in
         if self.route[self.route_index].type != WayPointType.HANDOVER_OUT or self.route[self.route_index + 1].type != WayPointType.HANDOVER_IN:
-            raise ValueError("invalid route for handover: current waypoint must be HANDOVER_OUT and next waypoint must be HANDOVER_IN")
+            log.error("uav %s entered HANDOVER with invalid waypoints, going EMERGENCY", self.uav_id)
+            self.state = UAVState.EMERGENCY
+            return
 
         out_wp = self.route[self.route_index]
         in_wp = self.route[self.route_index + 1]
@@ -285,7 +472,9 @@ class UAV:
         # get destination airspace object
         destination_airspace = self.airspace.world_manager.get_airspace(in_wp.airspace_id)
         if destination_airspace is None:
-            raise ValueError(f"Destination airspace {in_wp.airspace_id} not found during handover")
+            log.error("uav %s handover destination airspace %s not found, going EMERGENCY", self.uav_id, in_wp.airspace_id)
+            self.state = UAVState.EMERGENCY
+            return
         
         self.airspace.complete_handover(out_wp.airspace_id, in_wp.airspace_id, self.uav_id)
 
@@ -312,11 +501,13 @@ class UAV:
         target_global = self.airspace.local_to_world(target)
         
         # simulate flight time based on distance and cruise speed
-        distance = np.linalg.norm(np.array([target.x - start.x, target.y - start.y]))
+        start_xy = to_array(start)
+        target_xy = to_array(target)
+        distance = np.linalg.norm(target_xy - start_xy)
         flight_time = distance / self.cruise_speed_mps
         
         # create velocity vector from start to target
-        direction = np.array([target.x - start.x, target.y - start.y])
+        direction = target_xy - start_xy
         if distance > 0:
             direction = direction / distance
             vel_magnitude = self.cruise_speed_mps
@@ -354,15 +545,20 @@ class UAV:
         if self.sm is not None:
             self.sm.deregister_segment(self.uav_id, self.pos)
         
-        log.info("uav %s flew from (%.1f, %.1f) to (%.1f, %.1f)", self.uav_id, start.x, start.y, target.x, target.y)
+        start_x, start_y = get_xy(start)
+        target_x, target_y = get_xy(target)
+        log.info("uav %s flew from (%.1f, %.1f) to (%.1f, %.1f)", self.uav_id, start_x, start_y, target_x, target_y)
         self.vel = Velocity(0.0, 0.0)
         return True
 
     def _fly_to_global(self, target: GlobalPosition):
-        if np.linalg.norm(np.array([self.pos.x - target.x, self.pos.y - target.y])) <= 1.0:
+        current_xy = to_array(self.pos)
+        target_xy = to_array(target)
+        distance = np.linalg.norm(target_xy - current_xy)
+
+        if distance <= 1.0:
             return
 
         local_start = self.airspace.world_to_local(self.pos)
         local_target = self.airspace.world_to_local(target)
         yield from self._execute_flight(local_start, local_target)
-        
