@@ -1,18 +1,21 @@
 import numpy as np
 from src.entities import UAVState
-from src.schemas import UAV_SEGMENT
+from src.schemas import UAV_SEGMENT, AirspaceType
 
 # spatial manager for tracking UAS positions and checking conflicts
 class SpatialManager:
-    def __init__(self, safety_radius, metrics=None, env=None):
+    def __init__(self, safety_radius, metrics=None, env=None, grid_map=None, origin=None):
         self.safety_radius = safety_radius
         self.metrics = metrics  
         self.env = env
+        self.grid_map = grid_map
+        self.origin = origin
         
         # position/state snapshots for event boundaries
         self.positions = {}
         self.states = {}
         self.radii = {}
+        self.velocities = {}
         
         # uav segments
         self.active_segments = {} 
@@ -29,7 +32,11 @@ class SpatialManager:
         self.ground_zone_owners = {}
         self.uav_ground_zone = {}
 
-    # --------- reservation -----------------
+        # time index reservations
+        self.reservations = {}
+        self.edge_reservations = {}
+
+    # --------- depot reservation -----------------
     def _to_array(self, value):
         if hasattr(value, "as_array"):
             return np.asarray(value.as_array(), dtype=float)
@@ -82,6 +89,77 @@ class SpatialManager:
                 return False
 
         return True
+
+    # ------- time space reservations --------------------------
+    def is_reserved(self, cell, time_idx, uav_id=None):
+        # check if cell is reserved at a given time
+        key = (int(cell[0]), int(cell[1]), int(time_idx))
+        owner = self.reservations.get(key)
+        if owner is None:
+            return False
+        if uav_id is not None and owner == uav_id:
+            return False
+        return True
+
+    # reserve cell for uav at given time
+    def reserve_cell(self, uav_id, cell, time_idx):
+        key = (int(cell[0]), int(cell[1]), int(time_idx))
+        owner = self.reservations.get(key)
+        if owner is None or owner == uav_id:
+            self.reservations[key] = uav_id
+            if self.metrics is not None and hasattr(self.metrics, "record_reservation_attempt"):
+                self.metrics.record_reservation_attempt(True)
+            return True
+        if self.metrics is not None and hasattr(self.metrics, "record_reservation_attempt"):
+            self.metrics.record_reservation_attempt(False)
+        return False
+    
+    def is_edge_reserved(self, from_cell, to_cell, time_idx, uav_id=None):
+        key = ( int(from_cell[0]), int(from_cell[1]), int(to_cell[0]), int(to_cell[1]), int(time_idx))
+        owner = self.edge_reservations.get(key)
+        if owner is None:
+            return False
+        if uav_id is not None and owner == uav_id:
+            return False
+        return True
+
+    def reserve_edge(self, uav_id, from_cell, to_cell, time_idx):
+        key = ( int(from_cell[0]), int(from_cell[1]), int(to_cell[0]), int(to_cell[1]), int(time_idx))
+        owner = self.edge_reservations.get(key)
+        if owner is None or owner == uav_id:
+            self.edge_reservations[key] = uav_id
+            return True
+        return False
+
+    def is_swap_conflict(self, from_cell, to_cell, time_idx, uav_id=None):
+        return self.is_edge_reserved(to_cell, from_cell, time_idx, uav_id=uav_id)
+
+    # clears all reservations owned by given uav
+    def clear_reservations(self, uav_id):
+        # check id
+        if uav_id is None:
+            return
+    
+        # remove keys
+        remove_keys = [key for key, owner in self.reservations.items() if owner == uav_id]
+        for key in remove_keys:
+            del self.reservations[key]
+        
+        # remove edges
+        remove_edge_keys = [key for key, owner in self.edge_reservations.items() if owner == uav_id]
+        for key in remove_edge_keys:
+            del self.edge_reservations[key]
+
+    # removes old reservations 
+    def expire_stale_reservations(self, current_time_idx):
+        # get keys from past
+        stale_keys = [key for key in self.reservations if key[2] < current_time_idx]
+        for key in stale_keys:
+            del self.reservations[key]
+        # get edges from past
+        stale_edges = [key for key in self.edge_reservations if key[4] < current_time_idx]
+        for key in stale_edges:
+            del self.edge_reservations[key]
 
     # ------------- conflicts --------------
     def check_conflicts(self, metrics, current_time):
@@ -157,17 +235,24 @@ class SpatialManager:
         # update snapshot only at event boundaries: landing, segment end, airspace transfer
         self.positions[uav_id] = self._to_array(pos)
         self.states[uav_id] = state
+        self.velocities[uav_id] = np.array([0.0, 0.0], dtype=float)
+
+    # update only the state, dont touch position or velocity (caller may have an active segment)
+    def update_state(self, uav_id, state):
+        self.states[uav_id] = state
 
     def register_segment(self, uav_id, segment: UAV_SEGMENT):
         # register active motion segment 
         self.active_segments[uav_id] = segment
         # radius comes from segment only
         self.radii[uav_id] = float(segment.radius)
+        self.velocities[uav_id] = self._to_array(segment.velocity)
 
     def deregister_segment(self, uav_id, final_position):
         # remove segment when segment ends and store final pos as snapshot
         segment = self.active_segments.pop(uav_id, None)
         self.update_position_snapshot(uav_id, final_position, self.states.get(uav_id))
+        self.velocities[uav_id] = np.array([0.0, 0.0], dtype=float)
         
         # record precomputed collision/violation data at the event boundary
         if self.metrics is not None and segment is not None:
@@ -255,6 +340,36 @@ class SpatialManager:
         
         return min_distance
 
+    # returns if segment collides with static obstacles
+    def _segment_hits_obstacle(self, candidate: UAV_SEGMENT):
+        if self.grid_map is None or self.origin is None:
+            return False, None
+
+        # get grid co-ordinate
+        origin_array = self._to_array(self.origin)
+        start_local = self._to_array(candidate.start_position) - origin_array
+        end_local = self._to_array(candidate.end_position) - origin_array
+
+        dx = end_local[0] - start_local[0]
+        dy = end_local[1] - start_local[1]
+        length = float(np.hypot(dx, dy))
+
+        # if segment is only 1 cell
+        if length < 1e-6:
+            return False, None
+
+        # check along line segemnt for obstacles
+        n_samples = max(2, int(np.ceil(length / self.grid_map.resolution)) + 1)
+        for i in range(n_samples):
+            alpha = i / (n_samples - 1)
+            x = start_local[0] + alpha * dx
+            y = start_local[1] + alpha * dy
+            gx, gy = self.grid_map.world_to_grid_point(x, y, clamp=True)
+            if self.grid_map.grid[gx, gy] == AirspaceType.OBSTACLE.value:
+                return True, (gx, gy)
+
+        return False, None
+
     def check_segment_safety(self, uav_id, candidate: UAV_SEGMENT):
         # pre-compute collision/violation data for this segment
         # returns true if the segment is  safe
@@ -262,6 +377,18 @@ class SpatialManager:
         candidate.predicted_violations.clear()
 
         is_safe = True
+
+        hit_obstacle, obstacle_cell = self._segment_hits_obstacle(candidate)
+        
+        if hit_obstacle:
+            # add collision to metrics
+            obstacle_id = f"OBSTACLE@{obstacle_cell}"
+            collision_time = 0.0
+            
+            candidate.predicted_collisions.append((obstacle_id, collision_time))
+            is_safe = False
+
+        # dynamic check
         for other_id, other in self.active_segments.items():
             if other_id == uav_id:
                 continue

@@ -36,6 +36,11 @@ class Metrics:
         self.obstacle_collision_events = []  # list of (uav_id, obstacle_id, distance)
         self.airspace_violation_events = []  # list of (uav_id, airspace_id, violation_type)
 
+        # reservation metrics
+        self.reservation_attempts = 0
+        self.reservations_granted = 0
+        self.reservations_denied = 0
+
     def record_job_request(self):
         self.jobs_requested += 1
 
@@ -69,6 +74,13 @@ class Metrics:
     def record_airspace_violation(self, uav_id, airspace_id, position: GlobalPosition):
         # record airspace violation with global position
         self.airspace_violation_events.append((uav_id, airspace_id, position.as_array() if hasattr(position, 'as_array') else position))
+
+    def record_reservation_attempt(self, granted: bool):
+        self.reservation_attempts += 1
+        if granted:
+            self.reservations_granted += 1
+        else:
+            self.reservations_denied += 1
 
     # per-depot and per-airspace job tracking
     def record_job_request_at_depot(self, depot_id, origin_airspace, dest_airspace, job_id, creation_time):
@@ -236,7 +248,10 @@ class Metrics:
             "avg return time (s)": round(avg_return, 2),
             "total safety violations": len(self.safety_violation_events),
             "total collisions": len(self.collision_events),
-            "min separation (m)": separation_text
+            "min separation (m)": separation_text,
+            "reservation attempts": self.reservation_attempts,
+            "reservations granted": self.reservations_granted,
+            "reservations denied": self.reservations_denied,
         }
 
     def save_to_csv(self, filename="run_results.csv"):
