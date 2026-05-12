@@ -11,6 +11,9 @@ class PolicyType(Enum):
     OCCUPANCY_ASTAR = auto()
     DFS = auto()
     BFS = auto()
+    PRIORITIZED_ASTAR = auto()
+    COOPERATIVE_ASTAR = auto()
+    WHCA = auto()
 
 class WrapperType(Enum):
     NONE = auto()

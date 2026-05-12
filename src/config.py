@@ -36,6 +36,14 @@ class SimConfig:
     policy: PolicyType = PolicyType.GREEDY
     wrapper: WrapperType = WrapperType.NONE
     connectivity: int = 8
+    reservation_time_step: float = None
+    reservation_horizon: int = 2000
+    whca_window_size: int = 24
+    whca_max_windows: int = 12
+    priority_mode: str = "none"
+    priority_buckets: int = 4
+    local_avoidance_on_predicted_collision: bool = False
+    local_avoidance_mode: str = "none"
 
     # path recovery 
     path_recovery_strategy: PathRecoveryStrategy = PathRecoveryStrategy.RETURN_TO_NEXT_WP

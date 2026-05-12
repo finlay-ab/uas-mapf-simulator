@@ -42,6 +42,40 @@ def create_planner(config):
             config.safety_radius,
             connectivity=config.connectivity,
         )
+    elif config.policy == PolicyType.PRIORITIZED_ASTAR:
+        base_planner = PrioritizedAStarPolicy(
+            None,
+            config.max_speed,
+            config.safety_radius,
+            connectivity=config.connectivity,
+            time_step=config.reservation_time_step,
+            max_time_steps=config.reservation_horizon,
+            priority_mode=config.priority_mode,
+            priority_buckets=config.priority_buckets,
+        )
+    elif config.policy == PolicyType.COOPERATIVE_ASTAR:
+        base_planner = CooperativeAStarPolicy(
+            None,
+            config.max_speed,
+            config.safety_radius,
+            connectivity=config.connectivity,
+            time_step=config.reservation_time_step,
+            max_time_steps=config.reservation_horizon,
+            priority_mode=config.priority_mode,
+            priority_buckets=config.priority_buckets,
+        )
+    elif config.policy == PolicyType.WHCA:
+        base_planner = WHCAPolicy(
+            None,
+            config.max_speed,
+            config.safety_radius,
+            connectivity=config.connectivity,
+            time_step=config.reservation_time_step,
+            window_size=config.whca_window_size,
+            max_windows=config.whca_max_windows,
+            priority_mode=config.priority_mode,
+            priority_buckets=config.priority_buckets,
+        )
     else:
         raise ValueError(f"unknown policy type: {config.policy}")
 
