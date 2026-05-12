@@ -23,7 +23,7 @@ def create_planner(config):
         )
     elif config.policy == PolicyType.OCCUPANCY_ASTAR:
         base_planner = OccupancyAStarPolicy(
-            grid_map,
+            None,
             config.max_speed,
             config.safety_radius,
             connectivity=config.connectivity,
@@ -38,11 +38,3 @@ def create_planner(config):
         return VOWrapper(base_planner, config.safety_radius, active=True)
     else:
         raise ValueError(f"unknown wrapper type: {config.wrapper}")
-
-
-    #    log.info(f"Initialized Planner: {type(self.planner).__name__}")
-    #    if hasattr(self.planner, 'active'):
-    #        if self.planner.active is True:
-    #            log.info("VO safety wrapper is active")
-    #        else:
-    #            log.info("VO safety wrapper is disabled")

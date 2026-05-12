@@ -4,8 +4,9 @@ from collections import defaultdict
 
 import numpy as np
 
-from src.physics import Velocity
+from src.physics import Velocity, GridPosition
 from src.policies.base import MAPFPolicy
+from src.policies.astar import AStarPolicy
 
 # d* lite policy
 class DStarPolicy(MAPFPolicy):
@@ -87,7 +88,7 @@ class DStarPolicy(MAPFPolicy):
 
     # checks both map traversability and dynamic blocks
     def _is_traversable_node(self, node):
-        return self.grid_map.is_traversable(node[0], node[1], self.drone_radius) and node not in self.dynamic_blocked
+        return self.grid_map.is_traversable(GridPosition(node[0], node[1]), self.drone_radius) and node not in self.dynamic_blocked
 
     # get neighbours respecting connectivity
     def _successors(self, node):
@@ -259,9 +260,10 @@ class DStarPolicy(MAPFPolicy):
         ]
 
     # plan path and reuse previous search where possible
-    def plan_path(self, start, goal, spatial_manager=None):
-        start_array = np.array(start, dtype=float)
-        goal_array = np.array(goal, dtype=float)
+    def plan_path(self, start, goal, spatial_manager=None, uav_id=None):
+        del uav_id
+        start_array = self._position_array(start)
+        goal_array = self._position_array(goal)
 
         start_node = self.grid_map.world_to_grid_point(start_array[0], start_array[1], clamp=True)
         goal_node = self.grid_map.world_to_grid_point(goal_array[0], goal_array[1], clamp=True)
@@ -286,6 +288,10 @@ class DStarPolicy(MAPFPolicy):
 
         world_path = self._extract_path(start_node, goal_node, start_array)
         if len(world_path) == 1:
+            # gets an a* path as fall back as d* isnt complete
+            fallback_path = AStarPolicy.plan_path(self, start_array, goal_array, spatial_manager, None)
+            if fallback_path is not None and len(fallback_path) >= 2:
+                return fallback_path
             return world_path
 
         if len(world_path) > 0:
@@ -298,8 +304,8 @@ class DStarPolicy(MAPFPolicy):
         del name
         del spatial_manager
 
-        pos_array = np.array(pos, dtype=float)
-        target_array = np.array(target, dtype=float)
+        pos_array = self._position_array(pos)
+        target_array = self._position_array(target)
         direction = target_array - pos_array
         distance = np.linalg.norm(direction)
 

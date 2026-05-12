@@ -3,8 +3,7 @@ import math
 
 import numpy as np
 
-from src.environment.map import AirspaceType
-from src.physics import Velocity
+from src.physics import GridPosition, LocalPosition, Velocity
 from src.policies.base import MAPFPolicy
 
 class AStarPolicy(MAPFPolicy):
@@ -43,15 +42,20 @@ class AStarPolicy(MAPFPolicy):
         return path
 
     # plan path
-    def plan_path(self, start, goal, spatial_manager=None):
-        start_array = np.array(start, dtype=float)
-        goal_array = np.array(goal, dtype=float)
+    def plan_path(self, start, goal, spatial_manager=None, uav_id=None):
+        # doesnt use id
+        del uav_id
+
+        # get start and end as position
+        start_array = self._position_array(start)
+        goal_array = self._position_array(goal)
 
         start_node = self.grid_map.world_to_grid_point(start_array[0], start_array[1], clamp=True)
         goal_node = self.grid_map.world_to_grid_point(goal_array[0], goal_array[1], clamp=True)
 
-        if not self.grid_map.is_traversable(start_node[0], start_node[1], self.drone_radius) or not self.grid_map.is_traversable(goal_node[0], goal_node[1], self.drone_radius):
-            return [start_array]
+        # if start and end are not traversable return start as only path!
+        if not self.grid_map.is_traversable(GridPosition(start_node[0], start_node[1]), self.drone_radius) or not self.grid_map.is_traversable(GridPosition(goal_node[0], goal_node[1]), self.drone_radius):
+            return [start]
 
         open_heap = []
         heapq.heappush(open_heap, (self._heuristic(start_node, goal_node), 0, start_node))
@@ -67,10 +71,10 @@ class AStarPolicy(MAPFPolicy):
                 continue
             if current == goal_node:
                 grid_path = self._reconstruct_path(came_from, current)
-                world_path = [np.array(self.grid_map.grid_to_world_point(node[0], node[1], center=True), dtype=float) for node in grid_path]
+                world_path = [LocalPosition(float(self.grid_map.grid_to_world_point(node[0], node[1], center=True)[0]), float(self.grid_map.grid_to_world_point(node[0], node[1], center=True)[1])) for node in grid_path]
                 if len(world_path) > 0:
-                    world_path[0] = start_array
-                    world_path[-1] = goal_array
+                    world_path[0] = start
+                    world_path[-1] = goal
                 return world_path
 
             closed.add(current)
@@ -87,15 +91,15 @@ class AStarPolicy(MAPFPolicy):
                     heapq.heappush(open_heap, (f_score, counter, nxt))
                     counter += 1
 
-        return [start_array]
+        return [start]
 
     # get vel
     def get_velocity(self, name, pos, target, spatial_manager):
         del name
         del spatial_manager
 
-        pos_array = np.array(pos, dtype=float)
-        target_array = np.array(target, dtype=float)
+        pos_array = self._position_array(pos)
+        target_array = self._position_array(target)
         direction = target_array - pos_array
         distance = np.linalg.norm(direction)
 
