@@ -9,6 +9,8 @@ class PolicyType(Enum):
     ASTAR = auto()
     DSTAR = auto()
     OCCUPANCY_ASTAR = auto()
+    DFS = auto()
+    BFS = auto()
 
 class WrapperType(Enum):
     NONE = auto()

@@ -28,6 +28,20 @@ def create_planner(config):
             config.safety_radius,
             connectivity=config.connectivity,
         )
+    elif config.policy == PolicyType.DFS:
+        base_planner = DFSPathPolicy(
+            None,
+            config.max_speed,
+            config.safety_radius,
+            connectivity=config.connectivity,
+        )
+    elif config.policy == PolicyType.BFS:
+        base_planner = BFSPathPolicy(
+            None,
+            config.max_speed,
+            config.safety_radius,
+            connectivity=config.connectivity,
+        )
     else:
         raise ValueError(f"unknown policy type: {config.policy}")
 
