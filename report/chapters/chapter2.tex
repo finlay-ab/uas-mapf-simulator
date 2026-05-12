@@ -16,3 +16,15 @@ From these requirements they derive several other design goals that recur throug
 These requirements along with design goals have driven the architecture presented in <section>, the simulation model will be described in <section> and the policy abstraction in <section>.
 
 There will also be a section on the revervation system <section> and a summary on how the project was managed <section>
+
+\section{requirements and design goals}
+
+The simulation frameowkr is organsed as a layered modular architecture in which each layer has a clearly defined responsablity, relying on the layer below. the arcihtecture illisturated in <architectrue figure>, comprises of these key layers: configeration, world structure, ASP, agents, planning, collision avoidance and finaly metric collection.
+
+<figure>
+
+At the top of the archiecture is a single simulation object. It serves as the orchestrator and it is constructed from the configuation file. It is responsable for instatiating the SimPu envrionment, the metrics collector, creating the plannng polcies and the world manager. Once instantiated it deligaes teh running of the simulation event loop to a SimPy event manager after this its only responsable for recording the final metrics to a file on completion.
+
+The world manger owns the world strucuter and manger the inter-airspace coordinatino. It loads a world manifest that specifies the layout of airspaces, the position and orientation of each, and the connectivity betwee them. From the given manifest it also instatiates an Airspace object per sector. Once the airspaces have been created they are represented as nodes in a graph and the gates are added as edges. This is what is used when a UAV requres a route that crosses airspace boundires and it returns a sequesnce of airspaces and gates that the local planner within each airspace uses to get the UAV from its current position to a gate. 
+
+Each Airspace repersents one sector of the simulated airspace and it owns these static elements within; the grid mpa that represnts teh sectors geomatry, traesablity, depots and pbstalces; 
