@@ -54,6 +54,31 @@ The chioce to model the simulation as a discrete-event-driven system, rather tha
 
 \section{simulation model}
 
+This section describes the dynamic behavoir of the simulation; how UAVs behave over time, how jobs are generated, how routes are produced and how conflicts are detected and resolved. This will explain how the static archiecture in 2.2 provides a strucutre in which all of the simulation takes place. 
+
+\subsection{descrete event excection}
+
+The simulation uses SimPy at its foundations, treating each UAV, gate and job generator as a yeild control or decision point in an event loop. This means simulated time advances directly between events, therefor when there is no UAV making a decision the event loop jumps forwards to the next scheduled event such as a UAV reserving a new segment once commpleting its last jump or a new job getting generated. This is the principles behind discrete event driven simualition.
+
+There are two key implications of this approach. Firstly there is no fixed simulation tick, meaning no DT parameter that controls the granularity of state updates and adding one would not change behaviour becuase the simulator processes events at the exact time they occour. Secondly, two events at the same point in time are ordered deterministically by SimPys internal event-priority mechanism. This means that given the same seed if you ran the same simulation configeration it will give the exact same solution (This determism was also varified during experimental procedure in Chapter 4).
+
+\subsection{The UAV state machine}
+
+Each UAV is a SimPy  process whose actions are determiend by which state it is in at a given point. UAVs have eight states. The states and their trasitions are illustrated in Figure 2.2.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/uav-state-diagram.png}
+\caption{Figure 2.2: UAV state machine. Solid arrows indicate state transitions; arrow labels indicate the triggering conditions.}
+\label{fig:system-architecture}
+\end{figure}
+
+A UAV begins in the IDLE_DEPOT state, waiting at its home depot for a job to be placed into the depots queue. When a job
+
+IDLE_DEPOT to EN_route
+
+ENROUTE branches
 
 
-\subsection{x}
+EMERGANCY
+
