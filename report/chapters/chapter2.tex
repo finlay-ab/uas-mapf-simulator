@@ -73,12 +73,15 @@ Each UAV is a SimPy  process whose actions are determiend by which state it is i
 \label{fig:system-architecture}
 \end{figure}
 
-A UAV begins in the IDLE_DEPOT state, waiting at its home depot for a job to be placed into the depots queue. When a job
-
-IDLE_DEPOT to EN_route
-
-ENROUTE branches
+A UAV begins in the IDLE_DEPOT state, waiting at its home depot for a job to be placed into the depots queue. The uav will pick up the job and request the global (inter airspace gate loactions) route and local (current airspace) route. Then it transitions to TAKEOFF. During TAKEOFF, the UAV reserves a depot slot through a SimPy resource, moves into a takeoff positoin, and waits out a configured takeoff delay. When the delay elapses the the UAV transitions to EN_ROUTE.
 
 
-EMERGANCY
+The EN_ROUTE state is where the UAV does most of its work, handling the actual flight between waypoints. From here, it can shift into five different modes depending on the situation. If it reaches a delivery spot, it switches to DELIVERING to wait out a set drop off time before heading back to EN_ROUTE. When crossing into a new sector at a gate, it enters HANDOVER to update its coordinates and airspace references; the system stays active during this move so it can seamlessly return to its flight in the new context.
+
+Once the UAV reaches the end of its trip, it transitions to LANDING to grab a depot slot and finish its approach, eventually ending up in IDLE_DEPOT for the next job. If the path gets blocked, it enters HOVER_WAIT to take a breather and try to replan its route. If that replan works, it gets back to flying, but if the UAV completely runs out of options or can't recover its progress, it shifts into EMERGENCY mode.
+
+
+The EMERGENCY state acts as a safety net for when the system hits a wall it can't plan around. When this happens, the UAV tries to limp back to its home depot. If it’s already close enough, it just switches to LANDING and finishes the job like a normal flight. If it makes it back successfully, it ends up in IDLE_DEPOT, ready to work again. However, if the recovery fails over and over, the UAV eventually just grounds itself right where it is and stays in the EMERGENCY state.
+
+This setup is key for testing the whole fleet. Without this "fail-safe" logic, a single stuck UAV could crash the entire simulation or mess up the data. By isolating these failures, one broken flight doesn't stop the rest of the fleet from finishing their missions.
 
