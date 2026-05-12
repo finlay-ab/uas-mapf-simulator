@@ -196,7 +196,7 @@ class GridMap:
         if not (0 <= local_pos.x < self.grid_width * self.resolution and 0 <= local_pos.y < self.grid_height * self.resolution):
             raise ValueError(f"Local position {local_pos} is out of bounds in map of size ({self.grid_width * self.resolution}, {self.grid_height * self.resolution})")
         
-        return GridPosition(local_pos.x // self.resolution, local_pos.y // self.resolution)
+        return GridPosition(int(local_pos.x // self.resolution), int(local_pos.y // self.resolution))
     
     def grid_to_local(self, grid_pos: GridPosition) -> LocalPosition:
         if not (0 <= grid_pos.gx < self.grid_width and 0 <= grid_pos.gy < self.grid_height):
@@ -205,10 +205,49 @@ class GridMap:
         # centered grid point in world coordinates
         return LocalPosition((grid_pos.gx + 0.5) * self.resolution, (grid_pos.gy + 0.5) * self.resolution)
 
+   # world to grid
+    def world_to_grid_point(self, world_x, world_y, clamp=False):
+        gx = int(world_x / self.resolution)
+        gy = int(world_y / self.resolution)
+        if clamp:
+            gx = max(0, min(gx, self.grid_width - 1))
+            gy = max(0, min(gy, self.grid_height - 1))
+        return (gx, gy)
+
+    # grid to world 
+    def grid_to_world_point(self, gx, gy, center=False):
+        if center:
+            world_x = (gx + 0.5) * self.resolution
+            world_y = (gy + 0.5) * self.resolution
+        else:
+            world_x = gx * self.resolution
+            world_y = gy * self.resolution
+        return (world_x, world_y)
+
+    # get neighbours of a area uses yeild to get step by step 
+    def get_neighbors(self, gx, gy, drone_radius, connectivity=8):
+        grid_pos = GridPosition(gx, gy)
+        for neighbor in self.get_footprint_neighbors(grid_pos, drone_radius, connectivity):
+            yield (neighbor.gx, neighbor.gy)
+
     def is_traversable(self, grid_position: GridPosition, drone_radius):
         if self.in_bounds(grid_position):
             x, y = self.grid_to_world_point(grid_position.gx, grid_position.gy, center=True)
             return self.evaluate_footprint(x, y, drone_radius) < AirspaceType.RESTRICTED.value
+        return False
+
+    # max airspace type in drone radius
+    def evaluate_footprint(self, x, y, drone_radius):
+        gx, gy = self.world_to_grid_point(x, y)
+        grid_radius = int(np.ceil(drone_radius / self.resolution))
+
+        max_value = AirspaceType.OPEN.value
+        for dx in range(-grid_radius, grid_radius + 1):
+            for dy in range(-grid_radius, grid_radius + 1):
+                nx, ny = gx + dx, gy + dy
+                if 0 <= nx < self.grid_width and 0 <= ny < self.grid_height:
+                    max_value = max(max_value, self.grid[nx, ny])
+        return max_value
 
     def in_bounds(self, position):
         if isinstance(position, LocalPosition):
