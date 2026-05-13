@@ -70,3 +70,34 @@ The three single seeded supplementary experiments examine fleet size, obstacle d
 Despite varying fleet size between small, medium, and large it produces essentially identical completion rates of approximately 0.14 for every policy (except DFS due to its massively inefficient nature). Completion rate at is therefore not limited by fleet capacity therefore adding more UAVs does not produce more deliveries. The bottleneck is elsewhere in the system, i belive it to be both depot take off and landing and also gate capcaity. Despite no decrese in delivery time with fleet size, the run time however does increase with fleet size for all polices (such as WHCA* going from 45\,s to 78\,s). This is an expected result as more UAVs means that more searches/ routes are needed to be generated. Other than WHCA* and BFS other polices show increases that are approximately linear to the number of UAVs.
 
 In an obstacle-heavy world, the same pattern produced (albeit at a smaller scale)  Completion rate is reduced to approximately 0.06 across policies (from 0.14--0.40 in th default), reflecting that higher obstacle density makes more routes infeasible.
+
+\section{Algorithmic findings}
+\label{sec:results-findings}
+
+Three findings of broader interest emerged from this data.
+
+The firstly bounded horizon completability. WHCA*'s completion rate was consistently lower than Prioritised A* and Cooperative A* across the experimental matrix (approximately 0.27 versus approximately 0.35 given the sim\_time = 500\,s), despite all three sharing the same underlying search. This is the cost trade off with WHCA* is that if a complete route requires to many time steps WHCA* can not find it. 
+
+The second is the trade-off. A* (decoupled, no time expansion) and Prioritised A* (coordinated, time-expanded) achieve similar completion rates (approximately 0.37 and 0.35 respectively) but exhibit substantially different collision behaviour under allow on with A* making up 3x more collisions. Therefor the reservation mechanism has increased the saftey of the policy without reducing its efficieny. 
+
+The third concerns replanning capacity for strict deconfliction. The fall of Greedy's completion rate from 0.41 to 0.11 by toggling reservation shows that strict deconfliction cannot be applied to policies that dont have the capacity to replan around rejected reservations. If a UAVs reservation is rejected and the policy can only give the same plan back the UAV will fail. The binary toggle shows this in a way that the cooperative pathfinding literature typically does not.
+
+\section{Limitations}
+\label{sec:results-limitations}
+
+The main sweep uses five seeds, which is insufficient for statistical claims such as confidence interval reporting and significance testing. Furthermore the supplementary experiments use a single seed and are reported as descriptive observations (due to the single seed and the short simulation time). The main simulation durations is short relative to typical UTM deployments and completion rates cluster around 0.35--0.40 across most policies, which Section~\ref{sec:results-variation} attributes to an infrastructure bottleneck rather than to policy capacity. However in the real world even the high end 40\% completion rate is not acceptable for to be relide on by buisness, governments and people. Furthermore, the Conflict-Based Search (CBS) family~\cite{sharon2015cbs} and the LaCAM family were not implemented along with active collsion avoidance methods such as the Velocity Obstacle (VO) family.
+
+\section{Conclusions}
+\label{sec:results-conclusions}
+ 
+There are several directions in which i would extended this work given more time.
+
+The first is to extended the algorithmic coverage to include algorithms such as CBS~\cite{sharon2015cbs} and LaCAM, which are both widely used in cooperative literature. This would allow for a more comhersensive comparison between different planning mechanisms. I would also include the D* lite algorithm, which is a single agent replanning algorithm that could be used in a decoupled policy to give it the capacity to replan around rejected reservations which in theory would be the best pairing with the reservation mechanism.
+
+Second, i would impliment active collision avoidance methods such as the Velocity Obstacle (VO) family, which are widely used in MAPF literature~\cite{fiorini1998vo, vandenberg2011orca}). While the mechanism is partially present in the current framework, it would provide a more comprehensive mechansm for collisision aviodance that could be compared against the reservation mechanism.
+
+Third i would extend the simulations to run for extended times and with more seeds to allow for statistical claims to be made. This would allow for more empirically rigorous conclusions to be drawn from the data. Along with this the infrastructure bottleneck would need to be addressed to allow for higher completion and more meaningful comparisons as polices dont hit the cap and platue at around 0.35--0.40.
+
+The fourth is to extened the reservation mechanism to have a more complex interaction with policies. For example instead of like now just hovering and waiting for a reservation to be accepted, the UAV could have a more complex behavour such as replanning around a rejected reservation. 
+
+Once these extensions are implemented, the framework could not only be use for a more indepth analysis of MAPF, VOs and reservation based coordination but could also be potentially a tool to test and evaluate real world UTM polices that are being developed. 
