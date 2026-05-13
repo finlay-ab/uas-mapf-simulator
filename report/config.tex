@@ -9,6 +9,8 @@
 \usepackage{graphicx}
 \usepackage{titlesec}
 \usepackage{url}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{hyperref}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -19,11 +21,11 @@
 \newcommand{\projectTitle}{Utilising Multi Agent Path Finding to manage Unmanned Aerial Systems in urban environments.}
 \newcommand{\fullname}{Finlay Brydges}
 \newcommand{\degreeTitle}{BSc Computer Science}
-	% e.g. "BSc Computer Science"
+    % e.g. "BSc Computer Science"
 \newcommand{\session}{2025/26}
-	% "Session" means the academic year, i.e. 2021/22.
+    % "Session" means the academic year, i.e. 2021/22.
 \newcommand{\module}{COMP3931 Individual Project}
-	% e.g. "COMP3931 Individual Project".
+    % e.g. "COMP3931 Individual Project".
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Change the geometry of the page to have a 25 mm binding edge
@@ -61,7 +63,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Bibliography style: choose one and make sure you have the relevant .bst file
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\bibliographystyle{abbrv}
+% These have been commented out because they cannot be executed in the 
+% preamble. They should remain in finalReport.tex where they are printed.
+%\bibliographystyle{abbrvnat}
+%\bibliography{bibs/refs}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -110,8 +115,8 @@
 % Define a new environment for the dissertation summary
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newenvironment{dissertationsummary}
- 	{\cleardoublepage \null 
- 		\begin{center}%
-			\textbf{Summary}
-		\end{center}}%
-	{\vfill \null }
+    {\cleardoublepage \null 
+        \begin{center}%
+            \textbf{Summary}
+        \end{center}}%
+    {\vfill \null }

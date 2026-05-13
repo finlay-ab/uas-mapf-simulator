@@ -3,6 +3,7 @@
 % Include the configuration file for layout.
 \input{config.tex}
 
+
 \begin{document}
 
 % The prelude is everything up to the start of chapter 1, and is contained
@@ -19,11 +20,15 @@
 % Adds references to the table of contents.
 \addcontentsline{toc}{chapter}{References}
 
-% All your bibtex entries should go in the file called "refs.bib".
+% Tell LaTeX which style to use
+\bibliographystyle{abbrvnat}
+
+% If your refs.bib file is in the same folder as finalReport.tex, use:
 \bibliography{refs}
+% OR, if your refs.bib file is inside a folder named 'bibs', use:
+% \bibliography{bibs/refs}
 
 % All appendices you have go in a file called "appendices.tex".
 \include{appendices}
 
 \end{document}
-
