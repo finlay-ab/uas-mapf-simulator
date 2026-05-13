@@ -1,66 +1,65 @@
 \chapter{Implementation and Validation}
 \label{chapter3}
 
-This chapter describes the implementation of the simulation framework outlined in Chapter 2 and the validation that has been implemented. Section 3.1 gives an overview of the codebase. Sections 3.2 and 3.3 describe the implementation of the simulation and the management policies. Section 3.4 documents how validation was performed. Section 3.5 documents findings from development that informed the implementation. Finally Section 3.6 summarises the chapter. \par
+This chapter describes the implementation of the simulation framework outlined in Chapter 2 and the validation that has been implemented. Section 3.1 gives an overview of the codebase. Sections 3.2 and 3.3 describe the implementation of the simulation and the management policies. Section 3.4 documents how validation was performed. Section 3.5 documents findings from development that informed the implementation. Finally, Section 3.6 summarises the chapter. \par
 
 \vspace{1em}
 
 \section{Implementation overview}
 
-The framework was implemented in Python 3.12 with approximately 2,800 lines of code distributed across modules outlined in Chapter 2. SimPy was used as the core of the descrete event driven simulation and NumPy for numerical operation. The codebase is organised hierarchically based on the area of function a class serves. At the top level in the root code directory is simulation.py, main.py, factory.py, config.py. The root also contains a policy package with the eight policies and an environment package with the airspace, ASP and grid map. \par
+The framework was implemented in Python 3.12 with approximately 2,800 lines of code distributed across modules outlined in Chapter 2. SimPy was used as the core of the discrete event driven simulation and NumPy for numerical operations. The codebase is organised hierarchically based on the area of function a class serves. At the top level in the root code directory are \texttt{simulation.py}, \texttt{main.py}, \texttt{factory.py}, and \texttt{config.py}. The root also contains a policy package with the eight policies and an environment package with the airspace, ASP, and grid map. \par
 
 \vspace{1em}
 
-This implementation follows the architectural design of Chapter 2. The with a factory that can select any planning policy that follows the MAPFbase class and the separation of ASP and Grid Map within the Airspace module. The rest of this chapter describes the implementation of the core simulation framework and the validatation used. It goes on further to disscuss the challeges encounted and the design choices made to overcome them. \par
+This implementation follows the architectural design of Chapter 2, with a factory that can select any planning policy that follows the \texttt{MAPFbase} class and the separation of ASP and Grid Map within the Airspace module. The rest of this chapter describes the implementation of the core simulation framework and the validation used. It goes on further to discuss the challenges encountered and the design choices made to overcome them. \par
 
 \vspace{1em}
-
 
 \section{Implementation of the simulation framework}
 
-The simulation core is built around three classes which are Simpy processes. Firstly UAV processes that drive the state machine described in Section 2.3, secondly job generator processes that produce jobs at a given rate and finally the simulation orchestrator that constructs the SimPy environment and world.\par
+The simulation core is built around three classes which are SimPy processes. Firstly, UAV processes that drive the state machine described in Section 2.3, secondly job generator processes that produce jobs at a given rate, and finally the simulation orchestrator that constructs the SimPy environment and world.\par
 
 \vspace{1em}
 
-For each UAV there is a SimPy procces. This means that once uav run is called method is registered and will run until terminated as UAVs are lifelong this means when the simulation finishes. it is a process that can yields control to the SimPy event loop at different decision points. These include when wiating for a job, take off and ladning and for a gate. They also include simulating movement between waypoints in which the uav yeilds until the simulation clock allows the uav to have "reached" the next way point. Its important to note that while the uav is moved between waypoints and not in small steps the collisoin detection method used doesnt really on this and only the segment between the two points and the time itll take are needed to check for collisions. \par
+For each UAV there is a SimPy process. This means that once the UAV run method is called, it is registered and will run until terminated; as UAVs are lifelong, this means when the simulation finishes. It is a process that yields control to the SimPy event loop at different decision points. These include waiting for a job, taking off, landing, and waiting for a gate. They also include simulating movement between waypoints, in which the UAV yields until the simulation clock allows the UAV to have "reached" the next waypoint. It is important to note that while the UAV is moved between waypoints and not in small steps, the collision detection method used does not rely on this, and only the segment between the two points and the time it will take are needed to check for collisions. \par
 
 \vspace{1em}
 
-Jobs are generated by a simple process that loops indefinitely, it yeilds a random time as defined by the poisson distribution and then once that time is up it will generate a job, add it to the queue and metrics then reapeat, by genretting a new yeild time and waiting. 
+Jobs are generated by a simple process that loops indefinitely. It yields a random time as defined by the Poisson distribution, and then once that time is up it will generate a job, add it to the queue and metrics, then repeat by generating a new yield time and waiting. 
 
 \section{Implementation of planning policies}
 
-Many of the eight planning polices share a substantial amount of code. A* is foundational and is extended by Occupancy A*, Prioritised A* and WHCA*. Occupancy A* extends A* by overriding the obstacle-set to include other UAVs current positions. Prioritised A* extendeds A* by adding time expanded search nodes and a reservation table. Cooperative A* doesnt extended A* but instead extends Prioritised A* by fixing the priority ordering and adding goal holding. WHCA* extends Prioritised A* by adding the windowing mechanism by which partial paths can be returned. \par
+Many of the eight planning policies share a substantial amount of code. A* is foundational and is extended by Occupancy A*, Prioritised A*, and WHCA*. Occupancy A* extends A* by overriding the obstacle set to include other UAVs current positions. Prioritised A* extends A* by adding time expanded search nodes and a reservation table. Cooperative A* does not extend A* but instead extends Prioritised A* by fixing the priority ordering and adding goal holding. WHCA* extends Prioritised A* by adding the windowing mechanism by which partial paths can be returned. \par
 
 \vspace{1em}
 
-BFS, DFS, and Greedy are independent implementations rather than A* derivatives. BFS uses a FIFO (first in first out) queue, DFS uses a LIFO (last in firstr out) stack and Greedy bypasses search entirely, returning only the start and goal positions as waypoints.\par
+BFS, DFS, and Greedy are independent implementations rather than A* derivatives. BFS uses a FIFO (first in first out) queue, DFS uses a LIFO (last in first out) stack, and Greedy bypasses search entirely, returning only the start and goal positions as waypoints.\par
 
 \vspace{1em}
 
-One detail from the implementation of reservation based policies is worth mentioning. The table is stored as two dictionaries, a vertex table keyed by (cell, time_index) and an edge table keyed by (from_cell, to_cell, time_index). The edge table is required to catch UAVs swapping cells in the same time and the vertex table that handles the segment safety system described in Section 2.5. \par
+One detail from the implementation of reservation based policies is worth mentioning. The table is stored as two dictionaries: a vertex table keyed by (cell, \texttt{time\_index}) and an edge table keyed by (\texttt{from\_cell}, \texttt{to\_cell}, \texttt{time\_index}). The edge table is required to catch UAVs swapping cells at the same time, and the vertex table handles the segment safety system described in Section 2.5. \par
 
 \vspace{1em}
 
 \section{Validation}
 
-The implimentation of the framework was validated through a combination of three methods. A unit test suite developed to test the most critical components such as the A* policy and collision detection. A full simualtion run with polices being ran multiple times udner the same configureation to verify the determinism of the simulation. Finally, end to end testing through collecting metric data and log files and checking for expected eliments and data. \par
+The implementation of the framework was validated through a combination of three methods. A unit test suite was developed to test the most critical components such as the A* policy and collision detection. A full simulation run with policies being run multiple times under the same configuration was used to verify the determinism of the simulation. Finally, end to end testing was performed through collecting metric data and log files and checking for expected elements and data. \par
 
 \vspace{1em}
 
-The project includes a pytest suite containing 28 tests across 10 test modules, covering policy behaviour, ASP, physics, metrics, state machine logic and end to end output generation. Coverage which was measured with a tool that logs which lines of code are executed during testing from the pytest suite logged 33\% coverage across the source code root folder. Some key components such as A* and Greedy polices recived over 80\% coverage. lower coverage is observed in code thats harder to test in isolation. Such as the UAV process in entities.py (10\%) and the airspace orchestration in airspace.py(0\%). However thats not to say they werent tests. As the full end to end test suite and the experimental results in chapter 4 provide substantial coverage of the whole codease, including the components that are harder to test in isolation. \par
+The project includes a pytest suite containing 28 tests across 10 test modules, covering policy behaviour, ASP, physics, metrics, state machine logic, and end to end output generation. Coverage, which was measured with a tool that logs which lines of code are executed during testing from the pytest suite, logged 33\% coverage across the source code root folder. Some key components such as the A* and Greedy policies received over 80\% coverage. Lower coverage is observed in code that is harder to test in isolation, such as the UAV process in \texttt{entities.py} (10\%) and the airspace orchestration in \texttt{airspace.py} (0\%). However, that is not to say they were not tested. The full end to end test suite and the experimental results in Chapter 4 provide substantial coverage of the whole codebase, including the components that are harder to test in isolation. \par
 
 \vspace{1em}
 
-Testing not only prevent unexpected errors and crashes but it also provides confidence in the correctness of the implementation. Such as testing if changing the connectivity in A* produces the expected change in path, or that collision checks which are so fundimental to the evaluation in chapter 4 are correctly identified. \par
+Testing not only prevents unexpected errors and crashes, but it also provides confidence in the correctness of the implementation. Examples include testing if changing the connectivity in A* produces the expected change in path, or ensuring that collision checks, which are so fundamental to the evaluation in Chapter 4, are correctly identified. \par
 
 \vspace{1em}
 
-The determinsm verification is a critical part of the validation process. As the simulation was designed to be fully deterministic (given a fixed seed) to support reproducibility of the experimental results it was essential to varify this propery. To do this empirically, every experimental configuration was run twice with identical inputs and the resulting output files were compared bit for bit. \par
+The determinism verification is a critical part of the validation process. As the simulation was designed to be fully deterministic (given a fixed seed) to support reproducibility of the experimental results, it was essential to verify this property. To do this empirically, every experimental configuration was run twice with identical inputs and the resulting output files were compared bit for bit. \par
 
 \vspace{1em}
 
-Intergration testing was performed by running the full simulation and checking the output file for the expected eliments. This provides confidence that the metrics are being collected are the same as the ones being logged. Continuous integration was achived by using github actions to run the unit tests on every pull and push request to the main branch. This provided confidence that when changes where made to the codebase, the core functinality wasnt broken.  \par
+Integration testing was performed by running the full simulation and checking the output file for the expected elements. This provides confidence that the metrics being collected are the same as the ones being logged. Continuous integration was achieved by using GitHub Actions to run the unit tests on every pull and push request to the main branch. This provided confidence that when changes were made to the codebase, the core functionality was not broken. \par
 
 \vspace{1em}
 
@@ -68,11 +67,11 @@ Intergration testing was performed by running the full simulation and checking t
 
 A couple of engineering findings emerged during development that meaningfully informed the implementation.
 
-The Greedy policy required explicit static object detection, as despite the policy producing straight line trajectories that frequently pass through objects (unlike other polices which avoid objects) it reported zero collisions. To fix this every policy now gets checked at the ASPs when reserving a segment it is checked if that segment collides with a static object in the Grid Map by rasterizing a line the width of the UAV between the 2 segment points. 
+The Greedy policy required explicit static object detection, as despite the policy producing straight line trajectories that frequently pass through objects (unlike other policies which avoid objects), it reported zero collisions. To fix this, every policy now gets checked at the ASP; when reserving a segment, it is checked if that segment collides with a static object in the Grid Map by rasterizing a line the width of the UAV between the two segment points. 
 
-While the aim for the framework was to be able to easily plug in new planners. WHCA*s strength was to return parital paths which the framework would belive is an incompleted path and thow a warning. Now the UAV state machine is set to return back to en_route for more path if the path given didnt get the UAV to its destination. 
+While the aim for the framework was to be able to easily plug in new planners, WHCA*'s strength was to return partial paths, which the framework would believe is an incomplete path and throw a warning. Now the UAV state machine is set to return back to \texttt{en\_route} for more path if the path given did not get the UAV to its destination. 
 
 
 \section{Summary}
 
-The implementation of the framework closely follows the architecture described in Chapter 2. The eight planning polices share the same base MAPF policy class. The reservation mechanism, tand the continuous collision detection are the principal engineering contributions of the implementation work. Validation was performed through unit testing, determinism checks and end to end runs across all eight policies. 
+The implementation of the framework closely follows the architecture described in Chapter 2. The eight planning policies share the same base MAPF policy class. The reservation mechanism and the continuous collision detection are the principal engineering contributions of the implementation work. Validation was performed through unit testing, determinism checks, and end to end runs across all eight policies.
