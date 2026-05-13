@@ -1,8 +1,12 @@
 import unittest
+import json
+import tempfile
+from pathlib import Path
 import numpy as np
 
 from src.environment.map import GridMap
 from src.policies.occupancy_astar import OccupancyAStarPolicy
+from src.helpers import to_array
 
  
 class MockSpatialManager:
@@ -19,7 +23,24 @@ class MockSpatialManager:
 class TestOccupancyAStarPolicy(unittest.TestCase):
     def _new_map(self):
         # simple empty map for path tests
-        return GridMap(width=400, height=400, resolution=1.0) 
+        map_data = {
+            "id": "test_map",
+            "width": 400,
+            "height": 400,
+            "resolution": 1.0,
+            "potential_field": False,
+            "obstacles": [],
+            "restricted_areas": [],
+            "depots": [{"id": "depot1", "x": 1.0, "y": 1.0}],
+            "gates": [],
+        }
+        tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+        try:
+            json.dump(map_data, tmp)
+            tmp.close()
+            return GridMap(tmp.name)
+        finally:
+            Path(tmp.name).unlink(missing_ok=True)
 
     def test_occupancy_astar_without_spatial_manager(self): 
         # no dynamic objects should still plan a normal path
@@ -37,8 +58,8 @@ class TestOccupancyAStarPolicy(unittest.TestCase):
         path = policy.plan_path(start, goal, spatial_manager=None)  
         # check we got a valid start to goal path         
         self.assertGreaterEqual(len(path), 2)  
-        self.assertTrue(np.allclose(path[0], start)) 
-        self.assertTrue(np.allclose(path[-1], goal)) 
+        self.assertTrue(np.allclose(to_array(path[0]), start)) 
+        self.assertTrue(np.allclose(to_array(path[-1]), goal)) 
 
     def test_occupancy_astar_avoids_other_uav(self):
         # put 2 uavs near the direct route so planner should detour
@@ -61,13 +82,14 @@ class TestOccupancyAStarPolicy(unittest.TestCase):
 
         # path still needs to be valid
         self.assertGreaterEqual(len(path), 2)
-        self.assertTrue(np.allclose(path[0], start))
-        self.assertTrue(np.allclose(path[-1], goal))
+        self.assertTrue(np.allclose(to_array(path[0]), start))
+        self.assertTrue(np.allclose(to_array(path[-1]), goal))
 
         # dont pass too close to blocked uav center
         for waypoint in path:
-            dist_to_blocked = np.linalg.norm(waypoint - np.array([50.0, 50.0]))
-            self.assertTrue(dist_to_blocked > 1.0 or np.allclose(waypoint, start))
+            wp = to_array(waypoint)
+            dist_to_blocked = np.linalg.norm(wp - np.array([50.0, 50.0]))
+            self.assertTrue(dist_to_blocked > 1.0 or np.allclose(wp, start))
 
     def test_occupancy_astar_preserves_connectivity(self):
         # connectivity setting should still matter with dynamic blocking on

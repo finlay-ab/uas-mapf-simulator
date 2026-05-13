@@ -2,6 +2,7 @@ import unittest
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 class TestOutputs(unittest.TestCase):
     
@@ -17,10 +18,16 @@ class TestOutputs(unittest.TestCase):
             os.remove(log_name)
 
         # run main
+        repo_root = str(Path(__file__).resolve().parents[1])
+        env = os.environ.copy()
+        env["PYTHONPATH"] = repo_root + os.pathsep + env.get("PYTHONPATH", "")
+
         result = subprocess.run(
-            [sys.executable, "src/main.py"],
+            [sys.executable, "-m", "src.main"],
             capture_output=True,
-            text=True
+            text=True,
+            cwd=repo_root,
+            env=env,
         )
 
         # check if it crashed
