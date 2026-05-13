@@ -62,4 +62,17 @@ The determinsm verification is a critical part of the validation process. As the
 
 Intergration testing was performed by running the full simulation and checking the output file for the expected eliments. This provides confidence that the metrics are being collected are the same as the ones being logged. Continuous integration was achived by using github actions to run the unit tests on every pull and push request to the main branch. This provided confidence that when changes where made to the codebase, the core functinality wasnt broken.  \par
 
-\
+\vspace{1em}
+
+\section{Engineering findings}
+
+A couple of engineering findings emerged during development that meaningfully informed the implementation.
+
+The Greedy policy required explicit static object detection, as despite the policy producing straight line trajectories that frequently pass through objects (unlike other polices which avoid objects) it reported zero collisions. To fix this every policy now gets checked at the ASPs when reserving a segment it is checked if that segment collides with a static object in the Grid Map by rasterizing a line the width of the UAV between the 2 segment points. 
+
+While the aim for the framework was to be able to easily plug in new planners. WHCA*s strength was to return parital paths which the framework would belive is an incompleted path and thow a warning. Now the UAV state machine is set to return back to en_route for more path if the path given didnt get the UAV to its destination. 
+
+
+\section{Summary}
+
+The implementation of the framework closely follows the architecture described in Chapter 2. The eight planning polices share the same base MAPF policy class. The reservation mechanism, tand the continuous collision detection are the principal engineering contributions of the implementation work. Validation was performed through unit testing, determinism checks and end to end runs across all eight policies. 
