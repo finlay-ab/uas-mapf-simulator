@@ -1,12 +1,10 @@
-<Concise statement of the problem you intended to solve and main achievements (no more than one A4 page)>
-
-\vspace{10pt}
-
 As the commercial use of Unmanned Aerial Systems (UASs) for tasks such as surveillance, infrastructure maintenance, and goods delivery increases, the density of urban air traffic will exceed the capacity of traditional human control centers. To ensure safety and efficiency at scale, an automated unmanned approach to UAS Traffic Management (UTM) is required, in which Airspace Service Providers (ASPs) nogotiate flight plans with operators without continous human oversight.\par
 
 \vspace{10pt}
 
 This project addresses that challenge by Treating urban airspace managment as a Multi-Agent Path Finding (MAPF) problem and evaluating a range of management polices through simulation.A custom discrete event simulaiton framework was developed in Python using SimPy, capable of modelling one or more ASPs serving dynamic flight-plan requests accross a configurable urban grid.  \par
+
+\vspace{10pt}
 
 Eight policies were implemented and compared, ranging from uninformed search baselines (BFS, DFS) and a naive direct-path policy that ignores obstacles and other agents to provide a lower-bound reference on achievable flight time, through single-agent informed search (A*) and a variant aware of dynamic occupancy (Occupancy A*), to prioritised and cooperative coordination strategies (Prioritised A*, Cooperative A*, and Windowed Hierarchical Cooperative A*). Each policy was evaluated under multiple demand levels and reservation configurations, with 5 independent random seeds per condition to support reproducible statistical comparison. \par
 

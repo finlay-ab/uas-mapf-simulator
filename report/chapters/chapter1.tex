@@ -43,6 +43,9 @@ The remainder of this report is structured as followed: The remainder of this ch
 
 This chapter reviews the relevant literature on which this project is based. The review straddles three research areas: algorithmic literature on pathfinding, operational and regulatory literature on UAS traffic management, and the enginnering literature on conflict resolution in multi-agent systems. The remainder of this chapter examines each and identifies the specific gap this project aims to fill. \par
 
+\vspace{1em}
+
+
 \subsection{Single-agent path planning}
 \label{sec:single-agent-planning}
 
@@ -68,6 +71,8 @@ The final single-agent path planning algorithm used in this project is a "greedy
 
 The single-agent path planning algorithms described in this section can plan one agents path through an evenronment that is static, however they do not account for the presence of other agents within the environment. When multiple agents share an environment, and their plans interact, applying a single agent path planning algoirhtm produces plans that may conflict at execution time. Resolving these conflicts is the problem of multi-agent path finding, which is the focus of this project and is discussed in the next section. \par
 
+\vspace{1em}
+
 \subsection{Multi-agent path finding}
 \label{sec:mapf}
 
@@ -77,9 +82,13 @@ Multi-Agent Path Finding (MAPF) extends the single-agent path planning problem t
 
 Prioritised planning, introduced by Erdmann and Lozano-P\'erez \cite{erdmann1987motion}, assigns agents a priority order and plans their paths sequentially, each agent treating the planned paths of higher-priority agents as dynamic obstacles. This approach is simple and efficient, and can be very effective in practice, especially when the priority order is well-chosen. However despite this method being substantially cheaper then the methods i will discuss below, it is incomplete: a higher priority agents plan can block all remaining paths for a lower priority agent, even if a valid plan could be feasable given a different ordering. One way this is resolved, is by using Priority Based Search (PBS) \cite{ma2019pbs}, which achives its completeness by searching over different orders when a conflict is detected. \par
 
-Silvers Cooperative A* (CA*) \cite{silver2005cooperative} extends the A* algorithm to work with multiple agents by using an explicit time-indexed obstacle representation called a reservation table. When an agent plans its path, it checks the table to ensure that its planned path does not conflict with the path of a previously planned agent. The same paper also intreoduced Windowed Hierarchical Cooperative A* (WHCA*), which only plans a fixed number of time steps into the future. This windown based approach allows for more efficient planning as it reduces the size of the search space and by not planning the whole path it allows for less compute intensive replanning when the environment changes. However due to this limited planning it can lead to suboptimal paths.
+Silvers Cooperative A* (CA*) \cite{silver2005cooperative} extends the A* algorithm to work with multiple agents by using an explicit time-indexed obstacle representation called a reservation table. When an agent plans its path, it checks the table to ensure that its planned path does not conflict with the path of a previously planned agent. The same paper also intreoduced Windowed Hierarchical Cooperative A* (WHCA*), which only plans a fixed number of time steps into the future. This windown based approach allows for more efficient planning as it reduces the size of the search space and by not planning the whole path it allows for less compute intensive replanning when the environment changes. However due to this limited planning it can lead to suboptimal paths.\par
 
-The policies evaluated in this work are drwn from literature on uninformed search, single-agent informed and cooperative  search. The full evaluation includes the full range of this spectrum, from simple greedy to WHCA*. The inclusion of greedy, BFS and DFS are to allow for a comparison with more sophiticated algorithms. The inclusion of A* and D* are to allow for a mid range comparison with more sophiticated algorithms, and to provide a measureable benchmark for which more complex algorithms can be compared against. CA* and WHCA* are the top of the spectrum and are the widely used algorithms in the MAPF literature.
+\vspace{1em}
+
+The policies evaluated in this work are drwn from literature on uninformed search, single-agent informed and cooperative  search. The full evaluation includes the full range of this spectrum, from simple greedy to WHCA*. The inclusion of greedy, BFS and DFS are to allow for a comparison with more sophiticated algorithms. The inclusion of A* and D* are to allow for a mid range comparison with more sophiticated algorithms, and to provide a measureable benchmark for which more complex algorithms can be compared against. CA* and WHCA* are the top of the spectrum and are the widely used algorithms in the MAPF literature.\par
+
+\vspace{1em}
 
 \subsection{UAS Traffic Management}
 \label{sec:utm}
@@ -97,6 +106,8 @@ A growing body of reseach appling MAPF techniques to UTM has emerged in recent y
 \vspace{1em}
 
 despite active reseach within the UTM literature, the comparative performance of different policies with there Satey and efficiency trade-offs under realistic demand patterns is not yet well understood. Exisiting work tents to focus on either an optimal centralised solution and specific architeures rather then an empirical evalutation of candidate policies.  \par
+
+\vspace{1em}
 
 \subsection{Reservation-based deconfliction }
 \label{sec:reservation}
@@ -136,6 +147,12 @@ The literature servayed in this chapter provides the foundation for this project
 
 MAPF literature has provided a range of sophisticated solutions ranging from reservation based search, conflict based search and line based architectures. Each of these solutions have been produced along side rigerous proofs guaranteeing optimality, completeness and scalablity. However, the comparative performance of these policies under realistic demand patterns is not yet well understood. This project aims to fill this gap by providing a systematic evaluation of a range of candidate policies under varying demand patterns and constraints. \par
 
+\vspace{1em}
+
 The collision avoidance literature has provided a range of solutions for reactive deconfliction (such as the VO family of algorithms), they can operate in compliment with strategic planning however the methods are typically studied in isolation and thus the trade-offs between these policies when combined are not well understood . This project provides a framework that can support the evaluation of both strategic and reactive deconfliction policies, however the focus of this project is on the strategic policies and thus the evaluation of reactive policies is left for future work. \par
 
-The gap that this project address sits at the meeting point of these three areas of research. the simulation framwork developed in this project is designed to allow for a systematic evaluation of the trade-offs of using different strategic deconfliction policies under realistic demand patterns under a range of MAPF policies along with segment reservation deconfliction policies. The remainder of this report describes the design of this frameowrk in chapter 2, its implimenation and validation in chapter 3, and the results of the evaluation in chapter 4. 
+\vspace{1em}
+
+The gap that this project address sits at the meeting point of these three areas of research. the simulation framwork developed in this project is designed to allow for a systematic evaluation of the trade-offs of using different strategic deconfliction policies under realistic demand patterns under a range of MAPF policies along with segment reservation deconfliction policies. The remainder of this report describes the design of this frameowrk in chapter 2, its implimenation and validation in chapter 3, and the results of the evaluation in chapter 4. \par
+
+\vspace{1em}
