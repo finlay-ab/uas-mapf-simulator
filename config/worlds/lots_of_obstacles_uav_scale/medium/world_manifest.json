@@ -1,0 +1,11 @@
+{
+  "airspaces": [
+    {
+      "id": "airspace1",
+      "config_file": "config/worlds/lots_of_obstacles/airspace1/config.json",
+      "map_file": "config/worlds/lots_of_obstacles/airspace1/map.json",
+      "fleet_file": "config/worlds/lots_of_obstacles_uav_scale/medium/fleet.json"
+    }
+  ],
+  "connections": []
+}

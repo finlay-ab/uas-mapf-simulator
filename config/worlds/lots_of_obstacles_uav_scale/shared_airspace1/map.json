@@ -1,0 +1,123 @@
+{
+  "id": "lots_of_obstacles_map",
+  "width": 400,
+  "height": 400,
+  "resolution": 1.0,
+  "potential_field": true,
+  "potential_strength": 10,
+  "depots": [
+    {
+      "id": "main",
+      "x": 20,
+      "y": 20,
+      "num_drones": 4,
+      "operation_capacity": 1,
+      "queue_positions": [
+        { "x": 19, "y": 20 },
+        { "x": 20, "y": 19 },
+        { "x": 18, "y": 20 }
+      ]
+    },
+    {
+      "id": "secondary",
+      "x": 350,
+      "y": 350,
+      "num_drones": 2,
+      "operation_capacity": 1,
+      "queue_positions": [
+        { "x": 349, "y": 350 },
+        { "x": 350, "y": 349 },
+        { "x": 348, "y": 350 }
+      ]
+    }
+  ],
+  "obstacles": [
+    { "type": "obstacle", "x_min": 70, "y_min": 70, "x_max": 90, "y_max": 90 },
+    { "type": "obstacle", "x_min": 130, "y_min": 70, "x_max": 150, "y_max": 90 },
+    { "type": "obstacle", "x_min": 190, "y_min": 70, "x_max": 210, "y_max": 90 },
+    { "type": "obstacle", "x_min": 250, "y_min": 70, "x_max": 270, "y_max": 90 },
+    { "type": "obstacle", "x_min": 310, "y_min": 70, "x_max": 330, "y_max": 90 },
+    { "type": "obstacle", "x_min": 70, "y_min": 130, "x_max": 90, "y_max": 150 },
+    { "type": "obstacle", "x_min": 130, "y_min": 130, "x_max": 150, "y_max": 150 },
+    { "type": "obstacle", "x_min": 190, "y_min": 130, "x_max": 210, "y_max": 150 },
+    { "type": "obstacle", "x_min": 250, "y_min": 130, "x_max": 270, "y_max": 150 },
+    { "type": "obstacle", "x_min": 310, "y_min": 130, "x_max": 330, "y_max": 150 },
+    { "type": "obstacle", "x_min": 70, "y_min": 190, "x_max": 90, "y_max": 210 },
+    { "type": "obstacle", "x_min": 130, "y_min": 190, "x_max": 150, "y_max": 210 },
+    { "type": "obstacle", "x_min": 190, "y_min": 190, "x_max": 210, "y_max": 210 },
+    { "type": "obstacle", "x_min": 250, "y_min": 190, "x_max": 270, "y_max": 210 },
+    { "type": "obstacle", "x_min": 310, "y_min": 190, "x_max": 330, "y_max": 210 },
+    { "type": "obstacle", "x_min": 70, "y_min": 250, "x_max": 90, "y_max": 270 },
+    { "type": "obstacle", "x_min": 130, "y_min": 250, "x_max": 150, "y_max": 270 },
+    { "type": "obstacle", "x_min": 190, "y_min": 250, "x_max": 210, "y_max": 270 },
+    { "type": "obstacle", "x_min": 250, "y_min": 250, "x_max": 270, "y_max": 270 },
+    { "type": "obstacle", "x_min": 310, "y_min": 250, "x_max": 330, "y_max": 270 },
+    { "type": "obstacle", "x_min": 70, "y_min": 310, "x_max": 90, "y_max": 330 },
+    { "type": "obstacle", "x_min": 130, "y_min": 310, "x_max": 150, "y_max": 330 },
+    { "type": "obstacle", "x_min": 190, "y_min": 310, "x_max": 210, "y_max": 330 },
+    { "type": "obstacle", "x_min": 250, "y_min": 310, "x_max": 270, "y_max": 330 },
+    { "type": "obstacle", "x_min": 310, "y_min": 310, "x_max": 330, "y_max": 330 },
+    { "type": "obstacle", "x_min": 40, "y_min": 180, "x_max": 60, "y_max": 220 },
+    { "type": "obstacle", "x_min": 180, "y_min": 40, "x_max": 220, "y_max": 60 },
+    { "type": "obstacle", "x_min": 180, "y_min": 340, "x_max": 220, "y_max": 360 },
+    { "type": "obstacle", "x_min": 340, "y_min": 180, "x_max": 360, "y_max": 220 }
+  ],
+  "gates": [
+    {
+      "id": "a1_out_to_a2",
+      "x": 399,
+      "y": 150,
+      "airspace_id": "airspace1",
+      "target_airspace_id": "airspace2",
+      "target_gate_id": "a2_in_from_a1",
+      "capacity": 1,
+      "queue_positions": [
+        { "x": 398, "y": 150 },
+        { "x": 397, "y": 150 },
+        { "x": 396, "y": 150 }
+      ]
+    },
+    {
+      "id": "a1_in_from_a2",
+      "x": 399,
+      "y": 300,
+      "airspace_id": "airspace1",
+      "target_airspace_id": "airspace2",
+      "target_gate_id": "a2_out_to_a1",
+      "capacity": 1,
+      "queue_positions": [
+        { "x": 398, "y": 300 },
+        { "x": 397, "y": 300 },
+        { "x": 396, "y": 300 }
+      ]
+    },
+    {
+      "id": "a1_out_to_a3",
+      "x": 150,
+      "y": 399,
+      "airspace_id": "airspace1",
+      "target_airspace_id": "airspace3",
+      "target_gate_id": "a3_in_from_a1",
+      "capacity": 2,
+      "queue_positions": [
+        { "x": 150, "y": 398 },
+        { "x": 150, "y": 397 },
+        { "x": 150, "y": 396 }
+      ]
+    },
+    {
+      "id": "a1_in_from_a3",
+      "x": 260,
+      "y": 399,
+      "airspace_id": "airspace1",
+      "target_airspace_id": "airspace3",
+      "target_gate_id": "a3_out_to_a1",
+      "capacity": 2,
+      "queue_positions": [
+        { "x": 260, "y": 398 },
+        { "x": 260, "y": 397 },
+        { "x": 260, "y": 396 }
+      ]
+    }
+  ]
+}
