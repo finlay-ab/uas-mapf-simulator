@@ -8,7 +8,7 @@ This chapter reports the experimental evaluation of the simulation framework des
 \section{Experimental setup}
 \label{sec:results-setup}
 
-The main experiment that took place was a sweep over the eight policies and the binary \texttt{allow\_predicted\_}\allowbreak\texttt{collisions} toggle introduced in Chapter~\ref{chapter2}, at two simulation durations and across five seeds. Each configuration was executed twice to verify determinism. Three supplementary experiments hold the policy set fixed and vary one independent variable at a time. These were fleet size, obstacle density and the rate of delivery jobs. Table~\ref{tab:experiment-matrix} summarises the experiment matrix.\par
+The main experiment that took place was a sweep over the eight policies and the binary \texttt{allow\_predicted\_}\allowbreak\texttt{collisions} toggle introduced in Chapter~\ref{chapter2}, at two simulation durations and across five seeds. Each configuration was executed twice to verify determinism. Three supplementary experiments held the policy set fixed and varied one independent variable at a time. These were fleet size, obstacle density and the rate of delivery jobs. Table~\ref{tab:experiment-matrix} summarises the experiment matrix.\par
 
 \vspace{1em}
 
@@ -30,11 +30,11 @@ Spawn rate & 100 & 42 & 1 & All 8 & Poisson rate $\lambda$ \\
 \end{tabular}
 \end{table}
 
-Five metrics are recorded per configuration. Completion rate is the proportion of jobs delivered within the simulation time limit. Average delivery time is the mean simulated elapsed time between job assignment and delivery (in seconds). Total collisions (recorded by the ASP through the continuous collision check). Minimum separation is the smallest distance between two UAVs observed during the simulation, in metres. Runtime is the real world time it took to run the simulation, it will be used as a proxy for computational cost. \par
+Five metrics are recorded per configuration. Completion rate is the proportion of jobs delivered within the simulation time limit. Average delivery time is the mean simulated elapsed time between job assignment and delivery (in seconds). Total collisions are recorded by the ASP through the continuous collision check. Minimum separation is the smallest distance between two UAVs observed during the simulation, in metres. Runtime is the real world time it took to run the simulation; it will be used as a proxy for computational cost. \par
 
 \vspace{1em}
 
-Five seeds is the minimum required for a meaningful descriptive comparison. The Results are reported as means across these seeds. The supplementary experiments use a single seed and therefore only observations. The frameworks deterministic execution, verified empirically in Chapter~\ref{chapter3} by re running every configuration with bit identical results, supports the reproducibility of every figure presented in this chapter.\par
+Five seeds are the minimum required for a meaningful descriptive comparison. The results are reported as means across these seeds. The supplementary experiments use a single seed and therefore only observations. The framework's deterministic execution, verified empirically in Chapter~\ref{chapter3} by rerunning every configuration with bit identical results, supports the reproducibility of every figure presented in this chapter.\par
 
 \vspace{1em}
 
@@ -52,15 +52,15 @@ Figure~\ref{fig:main-comparison} presents the comparison of the eight policies u
 \label{fig:main-comparison}
 \end{figure}
 
-The total collisions graph shows the central finding that this project aims to demonstrate. With the reservation mechanism advisory (allow on), Greedy averages 73 collisions per run, A*, Occupancy A*, BFS, and DFS average between six and nine, and Prioritised A*, Cooperative A*, and WHCA* average three. But, when the mechanism is toggled, every policy averages zero collisions (and the pre averaged data shows 0). The reservation mechanism therefore constructively prevents UAV on UAV collisions. \par
+The total collisions graph shows the central finding that this project aims to demonstrate. With the reservation mechanism advisory (allow on), Greedy averages 73 collisions per run, A*, Occupancy A*, BFS, and DFS average between six and nine, and Prioritised A*, Cooperative A*, and WHCA* average three. But, when the mechanism is toggled, every policy had zero collisions. The reservation mechanism therefore constructively prevents UAV on UAV collisions. \par
 
 \vspace{1em}
 
-The completion rate graph shows that the reservation mechanism causes a large fall in Greedy's completion rate, but almost no change for other policies (All other policies are essentially unchanged: A*, Occupancy A*, and BFS hold at approximately 0.37; Prioritised A* and Cooperative A* at approximately 0.35; WHCA* at approximately 0.27; and DFS at approximately 0.10). This is entirely down to the fact that no other policy will submit a reservation that intersects a static obstacle which means that the ASP will reject the reservation and UAVs using the greedy policy will fail cuaseing the UAV to escalate through \texttt{HOVER\_WAIT} to \texttt{EMERGENCY}. \par
+The completion rate graph shows that the reservation mechanism causes a large fall in Greedy's completion rate, but almost no change for other policies (all other policies are essentially unchanged: A*, Occupancy A*, and BFS hold at approximately 0.37; Prioritised A* and Cooperative A* at approximately 0.35; WHCA* at approximately 0.27; and DFS at approximately 0.10). This is entirely down to the fact that no other policy will submit a reservation that intersects a static obstacle, which means that the ASP will reject the reservation and UAVs using the Greedy policy will fail, causing the UAV to escalate through \texttt{HOVER\_WAIT} to \texttt{EMERGENCY}. \par
 
 \vspace{1em} 
 
-The average delivery time panel shows the same issue. Greedy's allow on delivery time of 73\,s drops to 50\,s under allow off, reflecting that the few deliveries Greedy completes under enforcement are short, low-conflict routes. longer routes are rejected and never recorded. All other policies show essentially no difference in delivery time between the two states.\par
+The average delivery time panel shows the same issue. Greedy's allow on delivery time of 73\,s drops to 50\,s under allow off, reflecting that the few deliveries Greedy completes under enforcement are short, low conflict routes. Longer routes are rejected and never recorded. All other policies show essentially no difference in delivery time between the two states.\par
 
 \vspace{1em}
 
@@ -78,7 +78,7 @@ Figure~\ref{fig:runtime-comparison} presents the real world runtime of each poli
 \label{fig:runtime-comparison}
 \end{figure}
 
-The runtimes span three orders of magnitude. Greedy runs in essentially zero time because it performs no search. Then its informed search A* and Occupancy A* that run in approximately 300\,s. After this its BFS and DFS run in approximately 1{,}300--1{,}400\,s, reflecting their uninformed exploration. Then finally reservation based policies are the most expensive, Prioritised A* and Cooperative A* run in approximately 3{,}200--3{,}800\,s, and WHCA* in approximately 2{,}400\,s. This therefor shows that the cost of reservation based coordination is approximately 10x to A* and approximately 20x  to Greedy. WHCA* is an outlier in the patter and it shows a lower runtime than the other reservation polices, which is likely due to its bounded horizen.\par
+The runtimes span three orders of magnitude. Greedy runs in essentially zero time because it performs no search. Then it is informed search A* and Occupancy A* that run in approximately 300\,s. After this, BFS and DFS run in approximately 1{,}300--1{,}400\,s, reflecting their uninformed exploration. Then finally, reservation based policies are the most expensive; Prioritised A* and Cooperative A* run in approximately 3{,}200--3{,}800\,s, and WHCA* in approximately 2{,}400\,s. This therefore shows that the cost of reservation based coordination is approximately 10x that of A* and approximately 20x that of Greedy. WHCA* is an outlier in the pattern and it shows a lower runtime than the other reservation policies, which is likely due to its bounded horizon.\par
 
 \vspace{1em}
 
@@ -89,9 +89,9 @@ The three single seeded supplementary experiments examine fleet size, obstacle d
 
 \vspace{1em}
 
-Despite varying fleet size between small, medium, and large it produces essentially identical completion rates of approximately 0.14 for every policy (except DFS due to its massively inefficient nature). Completion rate at is therefore not limited by fleet capacity therefore adding more UAVs does not produce more deliveries. The bottleneck is elsewhere in the system, i belive it to be both depot take off and landing and also gate capcaity. Despite no decrese in delivery time with fleet size, the run time however does increase with fleet size for all polices (such as WHCA* going from 45\,s to 78\,s). This is an expected result as more UAVs means that more searches/ routes are needed to be generated. Other than WHCA* and BFS other polices show increases that are approximately linear to the number of UAVs.
+Varying fleet size between small, medium, and large produces essentially identical completion rates of approximately 0.14 for every policy (except DFS due to its massively inefficient nature). Completion rate is therefore not limited by fleet capacity, therefore adding more UAVs does not produce more deliveries. The bottleneck is elsewhere in the system; I believe it to be both depot takeoff and landing and also gate capacity. Despite no decrease in delivery time with fleet size, the runtime however does increase with fleet size for all policies (such as WHCA* going from 45\,s to 78\,s). This is an expected result as more UAVs mean that more searches or routes are needed to be generated. Other than WHCA* and BFS, other policies show increases that are approximately linear to the number of UAVs.
 
-In an obstacle-heavy world, the same pattern produced (albeit at a smaller scale)  Completion rate is reduced to approximately 0.06 across policies (from 0.14--0.40 in th default), reflecting that higher obstacle density makes more routes infeasible.\par
+In an obstacle heavy world, the same pattern is produced (albeit at a smaller scale). Completion rate is reduced to approximately 0.06 across policies (from 0.14--0.40 in the default), reflecting that higher obstacle density makes more routes infeasible.\par
 
 \vspace{1em}
 
@@ -100,71 +100,57 @@ In an obstacle-heavy world, the same pattern produced (albeit at a smaller scale
 
 Three findings of broader interest emerged from this data.
 
-The firstly bounded horizon completability. WHCA*'s completion rate was consistently lower than Prioritised A* and Cooperative A* across the experimental matrix (approximately 0.27 versus approximately 0.35 given the sim\_time = 500\,s), despite all three sharing the same underlying search. This is the cost trade off with WHCA* is that if a complete route requires to many time steps WHCA* can not find it. \par
+The first is bounded horizon completability. WHCA*'s completion rate was consistently lower than Prioritised A* and Cooperative A* across the experimental matrix (approximately 0.27 versus approximately 0.35 given the sim\_time = 500\,s), despite all three sharing the same underlying search. This is the cost trade off with WHCA*: if a complete route requires too many time steps, WHCA* cannot find it. \par
 
 \vspace{1em}
 
-The second is the trade-off. A* (decoupled, no time expansion) and Prioritised A* (coordinated, time-expanded) achieve similar completion rates (approximately 0.37 and 0.35 respectively) but exhibit substantially different collision behaviour under allow on with A* making up 3x more collisions. Therefor the reservation mechanism has increased the saftey of the policy without reducing its efficieny. \par
+The second is the trade off. A* (decoupled, no time expansion) and Prioritised A* (coordinated, time expanded) achieve similar completion rates (approximately 0.37 and 0.35 respectively) but exhibit substantially different collision behaviour under allow on with A* making up 3x more collisions. Therefore the reservation mechanism has increased the safety of the policy without reducing its efficiency. \par
 
 \vspace{1em}
 
-The third concerns replanning capacity for strict deconfliction. The fall of Greedy's completion rate from 0.41 to 0.11 by toggling reservation shows that strict deconfliction cannot be applied to policies that dont have the capacity to replan around rejected reservations. If a UAVs reservation is rejected and the policy can only give the same plan back the UAV will fail. The binary toggle shows this in a way that the cooperative pathfinding literature typically does not.\par
+The third concerns replanning capacity for strict deconfliction. The fall of Greedy's completion rate from 0.41 to 0.11 by toggling reservation shows that strict deconfliction cannot be applied to policies that do not have the capacity to replan around rejected reservations. If a UAV's reservation is rejected and the policy can only give the same plan back, the UAV will fail. The binary toggle shows this in a way that the cooperative pathfinding literature typically does not.\par
 
 \vspace{1em}
 
 \section{Limitations}
 \label{sec:results-limitations}
 
-The main sweep uses five seeds, which is insufficient for statistical claims such as confidence interval reporting and significance testing. Furthermore the supplementary experiments use a single seed and are reported as descriptive observations (due to the single seed and the short simulation time). The main simulation durations is short relative to typical UTM deployments and completion rates cluster around 0.35--0.40 across most policies, which Section~\ref{sec:results-variation} attributes to an infrastructure bottleneck rather than to policy capacity. However in the real world even the high end 40\% completion rate is not acceptable for to be relide on by buisness, governments and people. Furthermore, the Conflict-Based Search (CBS) family~\cite{sharon2015cbs} and the LaCAM family were not implemented along with active collsion avoidance methods such as the Velocity Obstacle (VO) family.\par
+The main sweep uses five seeds, which is insufficient for statistical claims such as confidence interval reporting and significance testing. Furthermore the supplementary experiments use a single seed and are reported as descriptive observations (due to the single seed and the short simulation time). The main simulation duration is short relative to typical UTM deployments and completion rates cluster around 0.35--0.40 across most policies, which Section~\ref{sec:results-variation} attributes to an infrastructure bottleneck rather than to policy capacity. However in the real world, even the high end 40\% completion rate is not acceptable to be relied on by business, governments and people. Furthermore, the Conflict-Based Search (CBS) family~\cite{sharon2015cbs} and the LaCAM family were not implemented along with active collision avoidance methods such as the Velocity Obstacle (VO) family.\par
 
 \vspace{1em}
 
 \section{Conclusions}
 \label{sec:results-conclusions}
- 
-There are several directions in which i would extended this work given more time.\par
 
-\vspace{1em}
+The project set out to evaluate the comparative performance of automated airspace management policies for ASP mediated urban UAS traffic, with particular attention to the safety and efficiency trade off that distinguishes one policy from another. The work framed the coordination problem as Multi Agent Path Finding. Three principal claims are supported by the experimental data.
 
-The first is to extended the algorithmic coverage to include algorithms such as CBS~\cite{sharon2015cbs} and LaCAM, which are both widely used in cooperative literature. This would allow for a more comhersensive comparison between different planning mechanisms. I would also include the D* lite algorithm, which is a single agent replanning algorithm that could be used in a decoupled policy to give it the capacity to replan around rejected reservations which in theory would be the best pairing with the reservation mechanism.\par
+First, the segment based reservation mechanism is the key driver for saftey within the framework. The reservation mechanism is the only "policy" that consitantly reduced collisions to zero. It was proved emprically through the binary testing of the allow_predicted_collisions toggle. The mechanisms effectiveness is independent of the underlying search algorithm so long as the algorithm can replan effectively. This is the contribution of strategic deconfliction in the sense of Silver~\cite{silver2005cooperative} also isolated empirically.
 
-\vspace{1em}
 
-Second, i would impliment active collision avoidance methods such as the Velocity Obstacle (VO) family, which are widely used in MAPF literature~\cite{fiorini1998vo, vandenberg2011orca}). While the mechanism is partially present in the current framework, it would provide a more comprehensive mechansm for collisision aviodance that could be compared against the reservation mechanism.\par
+Second, the computational cost of strategic deconfliction is real but bounded. Whilereservation based polices are safer they come at over a 10x increase in runtime compared toA*. At scale this cost would be non rivial for an ASP to bear. However on the other hand using the resrvation mechanism does not increase the runtime of non reservation based policies. Therefor this tool would be invaluable for an ASP to have in its toolkit.
 
-\vspace{1em}
+Third, the principal limitation of this evaluation is the seed budget. Five seeds support descriptive comparison and the qualitative findings reported above, but not confidence interval reportingor significance testing. The completion plateau observed across policies is a structural limitation indicating an infrastructure bottle neck of the policies. This is critical to the restulst as it suggest that the framework needs rethinking to produce non limited resutls. 
 
-Third i would extend the simulations to run for extended times and with more seeds to allow for statistical claims to be made. This would allow for more empirically rigorous conclusions to be drawn from the data. Along with this the infrastructure bottleneck would need to be addressed to allow for higher completion and more meaningful comparisons as polices dont hit the cap and platue at around 0.35--0.40.\par
-
-\vspace{1em}
-
-The fourth is to extened the reservation mechanism to have a more complex interaction with policies. For example instead of like now just hovering and waiting for a reservation to be accepted, the UAV could have a more complex behavour such as replanning around a rejected reservation. \par
-
-\vspace{1em}
-
-Once these extensions are implemented, the framework could not only be use for a more indepth analysis of MAPF, VOs and reservation based coordination but could also be potentially a tool to test and evaluate real world UTM polices that are being developed. \par
-
-\vspace{1em}
 
 \section{Future work}
 \label{sec:future-work}
 
-If given more time to work on this project, there are several directions in which i would extend this work.\par
+If given more time to work on this project, there are several directions in which I would extend this work.\par
 
 \vspace{1em}
 
-First, i would have expanded the algorithmic coverage to include algorithms such as CBS~\cite{sharon2015cbs} and LaCAM, which are both widely used in cooperative literature. This would allow for a more comprehensive comparison between different planning mechanisms. I would also include the D* lite algorithm, which is a single agent replanning algorithm that could be used in a decoupled policy to give it the capacity to replan around rejected reservations which in theory would be the best pairing with the reservation mechanism.\par
+I would have expanded the algorithmic coverage to include algorithms such as CBS~\cite{sharon2015cbs} and LaCAM, which are both widely used in cooperative literature. This would allow for a more comprehensive comparison between different planning mechanisms. I would also include the D* lite algorithm, which is a single agent replanning algorithm that could be used in a decoupled policy to give it the capacity to replan around rejected reservations which in theory would be the best pairing with the reservation mechanism.\par
 
 \vspace{1em}
 
-Second, i would have implemented active collision avoidance methods such as the Velocity Obstacle (VO) family, which are widely used in MAPF literature. While the mechanism is partially present in the current framework, it would provide a more comprehensive mechansm for collisision aviodance that could be compared against the reservation mechanism.\par
+I would have implemented active collision avoidance methods such as the Velocity Obstacle (VO) family, which are widely used in MAPF literature. While the mechanism is partially present in the current framework, it would provide a comprehensive mechanism for collision avoidance that could be compared against the reservation mechanism.\par
 
 \vspace{1em}
 
-Third, i would have extended the simulations to run for extended times and with more seeds to allow for statistical claims to be made. This would allow for more empirically rigorous conclusions to be drawn from the data. Along with this the infrastructure bottleneck would need to be addressed to allow for higher completion and more meaningful comparisons as polices dont hit the cap and platue at around 0.35--0.40.\par
+I would have extended the simulations to run for extended times and with more seeds to allow for statistical claims to be made. This would allow for more empirically rigorous conclusions to be drawn from the data. Along with this the infrastructure bottleneck would need to be addressed to allow for higher completion and more meaningful comparisons as policies do not hit the cap and plateau at around 0.35--0.40.\par
 
 \vspace{1em}
 
-Fourth, i would have extended the reservation mechanism to have a more complex interaction with policies. For example instead of like now just hovering and waiting for a reservation to be accepted, the UAV could have a more complex behavour such as replanning around a rejected reservation. \par
+Fourth, I would have extended the reservation mechanism to have a more complex interaction with policies. For example instead of like now just hovering and waiting for a reservation to be accepted, the UAV could have a more complex behaviour such as replanning around a rejected reservation. \par
 
 \vspace{1em}

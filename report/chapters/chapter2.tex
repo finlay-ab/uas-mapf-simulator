@@ -3,7 +3,7 @@
 
 % <Everything that comes under the `Methodology' criterion in the mark scheme should be described in one, or possibly more than one, chapter(s).>
 
-This chapter describes the design and methodology of the simulation framework developed in this project. Section 2.1 outlines the requirements and design goals that motivated the framework. Section 2.2 presents the architecture. Section 2.3 describes the model with a focus on the discrete event approach. Section 2.4 describes the management policies and strategy pattern through which they are composed. Section 2.5 describes the segment based reservation mechanism that forms the central experimental variable in the evaluation. Finally, Section 2.6 documents the project management approach adopted during development. \par
+This chapter describes the design and methodology of the simulation framework developed in this project. Section 2.1 outlines the requirements and design goals that motivated the framework. Section 2.2 presents the architecture. Section 2.3 describes the model with a focus on the discrete-event approach. Section 2.4 describes the management policies and strategy pattern through which they are composed. Section 2.5 describes the segment-based reservation mechanism that forms the central experimental variable in the evaluation. Finally, Section 2.6 documents the project management approach adopted during development. \par
 
 \vspace{1em}
 
@@ -13,15 +13,15 @@ The literature reviewed in Chapter 1 identifies a gap in the comparative empiric
 
 \vspace{1em}
 
-The functional requirements are as follows. The framework must model an urban airspace as a network of independent Airspace Service Providers (ASPs), each controlling their defined area and handling the handover of traffic to its neighbouring controllers. It must process flight plan requests dynamically during execution rather than as a fixed batch known in advance (to reflect the real world). It must support multiple management policies from MAPF reviewed in the chapter above. It must permit policies to be tested in the same environments and configurations. It must record sufficient data on each flight and simulation to support the safety, efficiency and coordination metrics described. \par
+The functional requirements are as follows. The framework must model an urban airspace as a network of independent Airspace Service Providers (ASPs), each controlling its defined area and handling the handover of traffic to its neighbouring controllers. It must process flight plan requests dynamically during execution rather than as a fixed batch known in advance (to reflect the real world). It must support multiple management policies from MAPF reviewed in the chapter above. It must permit policies to be tested in the same environments and configurations. It must record sufficient data on each flight and simulation to support the safety, efficiency, and coordination metrics described. \par
 
 \vspace{1em}
 
-The non functional requirements are equally important. The framework must be deterministic given a fixed random seed, so that experimental results are reproducible. It must be modular enough to permit new policies to be added without modifying the simulation core, in support of both the comparative evaluations undertaken in this work and any future extensions. It must provide configuration through external files rather than parameters so experimental conditions can be varied without recompilation. It must complete experiments within a reasonable time on commodity hardware as it will be run many times in many configurations. \par
+The non-functional requirements are equally important. The framework must be deterministic given a fixed random seed, so that experimental results are reproducible. It must be modular enough to permit new policies to be added without modifying the simulation core, in support of both the comparative evaluations undertaken in this work and any future extensions. It must provide configuration through external files rather than parameters so experimental conditions can be varied without recompilation. It must complete experiments within a reasonable time on commodity hardware as it will be run many times in many configurations. \par
 
 \vspace{1em}
 
-From these requirements, they derive several other design goals that recur throughout the rest of this chapter. The simulation must be discrete event driven rather than time stepped. Many considerations motivated this choice. First, performance: a time stepped simulation processes every agent (UAV) at every clock tick regardless of whether their state has changed, while a discrete event simulation processes a UAV only when an event affects it, which scales considerably better as the number of UAVs and the length of the simulated horizon grow. Secondly, precision in collision detection: continuous time geometric collision detection over analytic trajectory segments yields the exact moment and distance of closest approach, while a fixed tick simulation can miss close approach events that occur entirely within a single time step unless the step is made impractically small. Third, reproducibility: a discrete event simulation is fully determined by its random seed and configuration, whereas a time stepped simulation introduces the time step itself as a hidden parameter whose value can affect experimental results. SimPy \cite{simpy2024} is the natural choice for this paradigm in Python. \par
+From these requirements, they derive several other design goals that recur throughout the rest of this chapter. The simulation must be discrete-event driven rather than time-stepped. Many considerations motivated this choice. First, performance: a time-stepped simulation processes every agent (UAV) at every clock tick regardless of whether its state has changed, while a discrete-event simulation processes a UAV only when an event affects it, which scales considerably better as the number of UAVs and the length of the simulated horizon grow. Secondly, precision in collision detection: continuous-time geometric collision detection over analytic trajectory segments yields the exact moment and distance of closest approach, while a fixed-tick simulation can miss close approach events that occur entirely within a single time step unless the step is made impractically small. Third, reproducibility: a discrete-event simulation is fully determined by its random seed and configuration, whereas a time-stepped simulation introduces the time step itself as a hidden parameter whose value can affect experimental results. SimPy \cite{simpy2024} is the natural choice for this paradigm in Python. \par
 
 \vspace{1em}
 
@@ -29,7 +29,7 @@ These requirements and design goals together motivate the architecture presented
 
 \section{System Architecture}
 
-The simulation framework is organised as a layered modular architecture in which each layer has a clearly defined responsibility, relying on the layer below. The architecture illustrated in Figure 2.1 comprises these key layers: configuration, world structure, ASP, agents, planning, collision avoidance and finally metric collection.
+The simulation framework is organised as a layered, modular architecture in which each layer has a clearly defined responsibility, relying on the layer below. The architecture illustrated in Figure 2.1 comprises these key layers: configuration, world structure, ASP, agents, planning, collision avoidance, and finally metric collection.
 
 \begin{figure}[h]
 \centering
@@ -38,43 +38,43 @@ The simulation framework is organised as a layered modular architecture in which
 \label{fig:system-architecture}
 \end{figure}
 
-At the top of the architecture is a single simulation object. It serves as the orchestrator and it is constructed from the configuration file. It is responsible for instantiating the SimPy environment, the metrics collector, creating the planning policies and the world manager. Once instantiated it delegates the running of the simulation event loop to a SimPy event manager; after this it is only responsible for recording the final metrics to a file on completion.\par
+At the top of the architecture is a single simulation object. It serves as the orchestrator and is constructed from the configuration file. It is responsible for instantiating the SimPy environment and the metrics collector, and creating the planning policies and the world manager. Once instantiated, it delegates the running of the simulation event loop to a SimPy event manager; after this, it is only responsible for recording the final metrics to a file on completion.\par
 
 \vspace{1em}
 
-The world manager owns the world structure and manages the inter-airspace coordination. It loads a world manifest that specifies the layout of airspaces and the connectivity between them. From the given manifest it also initiates an Airspace object per sector. Once the airspaces have been created they are represented as nodes in a graph and the gates are added as edges. This is what is used when a UAV requires a route that crosses airspace boundaries and it returns a sequence of airspaces and gates that the local planner within each airspace uses to get the UAV from its current position to a gate. \par
+The world manager owns the world structure and manages the inter-airspace coordination. It loads a world manifest that specifies the layout of airspaces and the connectivity between them. From the given manifest it also initiates an Airspace object per sector. Once the airspaces have been created, they are represented as nodes in a graph and the gates are added as edges. This is what is used when a UAV requires a route that crosses airspace boundaries, and it returns a sequence of airspaces and gates that the local planner within each airspace uses to get the UAV from its current position to a gate. \par
 
 \vspace{1em}
 
-Each Airspace represents one sector of the simulated airspace. It owns per depot job queues populated by job generation processes (described in Section 2.3). A set of SimPy resource objects representing depots and gates as capacity constrained resources. The fleet of UAVs whose depot is within the sector. Each airspace also instantiates an ASP (Air Service Provider) object that manages the sector's dynamic state from tracking UAV position to continuous collision detection through segment reservation from trajectories (described in Section 2.5). The static spatial structure of the environment (obstacles, geometry and depots) is held in the GridMap; together these comprise the environment layer in the architecture. Both the static and dynamic environment help implement the flight plan management role that UTM literature attributes to a service provider \cite{kopardekar2014utm, faa2020utmconops}.\par
+Each Airspace represents one sector of the simulated airspace. It owns per-depot job queues populated by job generation processes (described in Section 2.3). A set of SimPy resource objects representing depots and gates as capacity-constrained resources. The fleet of UAVs whose depot is within the sector. Each airspace also instantiates an ASP (Air Service Provider) object that manages the sector's dynamic state from tracking UAV position to continuous collision detection through segment reservation from trajectories (described in Section 2.5). The static spatial structure of the environment (obstacles, geometry, and depots) is held in the GridMap; together these comprise the environment layer in the architecture. Both the static and dynamic environments help implement the flight plan management role that UTM literature attributes to a service provider \cite{kopardekar2014utm, faa2020utmconops}.\par
 
 \vspace{1em}
 
-UAV agents (which belong to airspaces) each run a SimPy process with its own state machine. A UAV holds a reference to its current management policy, its home depot's job queue and its parent airspace along with a set of configurations loaded from a configuration file including but not limited to maximum speed, safety radius and acceleration. When idle, a UAV yields until its home depot has a free job it can pick up. When a UAV picks up a job, the state machine kicks into effect. It requests a route through global airspace which returns a sequence of waypoints including the start point, gates to other airspaces and the destination. Then the UAV will register with the ASP to query for predicted collisions and update its own trajectory over time. The full lifecycle of the UAV and its eight state machine will be described in Section 2.3.\par
+UAV agents (which belong to airspaces) each run a SimPy process with their own state machines. A UAV holds a reference to its current management policy, its home depot's job queue, and its parent airspace along with a set of configurations loaded from a configuration file including but not limited to maximum speed, safety radius, and acceleration. When idle, a UAV yields until its home depot has a free job it can pick up. When a UAV picks up a job, the state machine kicks into effect. It requests a route through global airspace which returns a sequence of waypoints including the start point, gates to other airspaces, and the destination. Then the UAV will register with the ASP to query for predicted collisions and update its own trajectory over time. The full lifecycle of the UAV and its eight-state machine will be described in Section 2.3.\par
 
 \vspace{1em}
 
-The MAPF planner is an abstraction that every policy fits behind. Every policy must inherit the common interface which allows for easy plug and play in the configuration. This means that Greedy, BFS, DFS, A*, Occupancy A*, Prioritised A*, Cooperative A* and WHCA* all inherit velocity calculators and can return a list of waypoints. The Factory classes are able to be given a policy identifier from the configuration and instantiate the corresponding policy. This decoupling is essential for the comparative evaluation reported in Chapter 4, since it allows policies to be exchanged without modification to the airspace, UAV, or metrics subsystems. \par
+The MAPF planner is an abstraction that every policy fits behind. Every policy must inherit the common interface which allows for easy plug-and-play in the configuration. This means that Greedy, BFS, DFS, A*, Occupancy A*, Prioritised A*, Cooperative A*, and WHCA* all inherit velocity calculators and can return a list of waypoints. The Factory classes are able to be given a policy identifier from the configuration and instantiate the corresponding policy. This decoupling is essential for the comparative evaluation reported in Chapter 4, since it allows policies to be exchanged without modification to the airspace, UAV, or metrics subsystems. \par
 
 \vspace{1em}
 
-The metrics subsystem records per-flight, per-collision, and per-run data during simulation and writes the results to CSV. Configuration is loaded from external JSON files and can be modified by sending a config.py data object or a command line argument when running main. Externalising the configuration this way allows for testing without changing the source code, such as when giving the simulation a variety of seeds, run times, policies and other configurations evaluated in Chapter 4. \par
+The metrics subsystem records per-flight, per-collision, and per-run data during simulation and writes the results to CSV. Configuration is loaded from external JSON files and can be modified by sending a config.py data object or a command line argument when running main. Externalising the configuration this way allows for testing without changing the source code, such as when giving the simulation a variety of seeds, run times, policies, and other configurations evaluated in Chapter 4. \par
 
 \vspace{1em}
 
-The choice to model the simulation as a discrete event driven system, rather than as a time stepped one, is fundamental to the architecture and is justified in Section 2.1. At the architectural level, this choice is reflected in the use of SimPy as the simulation core. This is because SimPy processes are routines that can yield control to the event loop at decision points, producing a simulation in which simulated time advances directly between events rather than at fixed clock intervals. This in turn allows continuous time collision detection within the ASP, removing the time quantisation issues as $dt$ would impact collision detection. \par
+The choice to model the simulation as a discrete-event-driven system, rather than as a time-stepped one, is fundamental to the architecture and is justified in Section 2.1. At the architectural level, this choice is reflected in the use of SimPy as the simulation core. This is because SimPy processes are routines that can yield control to the event loop at decision points, producing a simulation in which simulated time advances directly between events rather than at fixed clock intervals. This in turn allows continuous-time collision detection within the ASP, removing the time quantisation issues as $dt$ would impact collision detection. \par
 
 \vspace{1em}
 
 \section{Simulation Model}
 
-This section describes the dynamic behaviour of the simulation; how UAVs behave over time, how jobs are generated, how routes are produced and how conflicts are detected and resolved. This will explain how the static architecture in Section 2.2 provides a structure in which all of the simulation takes place. \par
+This section describes the dynamic behaviour of the simulation; how UAVs behave over time, how jobs are generated, how routes are produced, and how conflicts are detected and resolved. This will explain how the static architecture in Section 2.2 provides a structure in which all of the simulation takes place. \par
 
 \vspace{1em}
 
 \subsection{Discrete event execution}
 
-The simulation uses SimPy at its foundations, treating each UAV, gate and job generator as a yield control or decision point in an event loop. This means simulated time advances directly between events; therefore, when there is no UAV making a decision, the event loop jumps forwards to the next scheduled event such as a UAV reserving a new segment once completing its last jump or a new job getting generated. These are the principles behind discrete event driven simulation.\par
+The simulation uses SimPy at its foundations, treating each UAV, gate, and job generator as a yield-control or decision point in an event loop. This means simulated time advances directly between events; therefore, when there is no UAV making a decision, the event loop jumps forwards to the next scheduled event such as a UAV reserving a new segment once completing its last jump or a new job getting generated. These are the principles behind discrete-event-driven simulation.\par
 
 \vspace{1em}
 
@@ -99,7 +99,7 @@ A UAV begins in the \texttt{IDLE\_DEPOT} state, waiting at its home depot for a 
 
 \vspace{1em}
 
-The \texttt{EN\_ROUTE} state is where the UAV does most of its work, handling the actual flight between waypoints. From here, it can shift into five different modes depending on the situation. If it reaches a delivery spot, it switches to \texttt{DELIVERING} to wait out a set drop off time before heading back to \texttt{EN\_ROUTE}. When crossing into a new sector at a gate, it enters \texttt{HANDOVER} to update its coordinates and airspace references; the system stays active during this move so it can seamlessly return to its flight in the new context.\par
+The \texttt{EN\_ROUTE} state is where the UAV does most of its work, handling the actual flight between waypoints. From here, it can shift into five different modes depending on the situation. If it reaches a delivery spot, it switches to \texttt{DELIVERING} to wait out a set drop-off time before heading back to \texttt{EN\_ROUTE}. When crossing into a new sector at a gate, it enters \texttt{HANDOVER} to update its coordinates and airspace references; the system stays active during this move so it can seamlessly return to its flight in the new context.\par
 
 \vspace{1em}
 
@@ -107,11 +107,11 @@ Once the UAV reaches the end of its trip, it transitions to \texttt{LANDING} to 
 
 \vspace{1em}
 
-The \texttt{EMERGENCY} state acts as a safety net for when the system hits a wall it cannot plan around. When this happens, the UAV tries to limp back to its home depot. If it is already close enough, it just switches to \texttt{LANDING} and finishes the job like a normal flight. If it makes it back successfully, it ends up in \texttt{IDLE\_DEPOT}, ready to work again. However, if the recovery fails over and over, the UAV eventually just grounds itself right where it is and stays in the \texttt{EMERGENCY} state.\par
+The \texttt{EMERGENCY} state acts as a fail-safe for when the system hits a wall it cannot plan around. When this happens, the UAV tries to limp back to its home depot. If it is already close enough, it just switches to \texttt{LANDING} and finishes the job like a normal flight. If it makes it back successfully, it ends up in \texttt{IDLE\_DEPOT}, ready to work again. However, if the recovery fails over and over, the UAV eventually just grounds itself right where it is and stays in the \texttt{EMERGENCY} state.\par
 
 \vspace{1em}
 
-This setup is key for testing the whole fleet. Without this "fail safe" logic, a single stuck UAV could crash the entire simulation or mess up the data. By isolating these failures, one broken flight does not stop the rest of the fleet from finishing their missions.\par
+This setup is key for testing the whole fleet. Without this "fail-safe" logic, a single stuck UAV could crash the entire simulation or mess up the data. By isolating these failures, one broken flight does not stop the rest of the fleet from finishing their missions.\par
 
 \vspace{1em}
 
@@ -127,7 +127,7 @@ A UAV that needs to travel from one Airspace to another must cross one or more g
 
 \vspace{1em}
 
-Within each airspace, the UAV's policy plans a low level path. The low level planner is only given two points within the current airspace: where the UAV is and where it is going within that airspace, be it a depot, gate, or delivery location. This separation of high level and low level planning means that the local planner only needs the GridMap and the global planner the inter-airspace graph. \par
+Within each airspace, the UAV's policy plans a low-level path. The low-level planner is only given two points within the current airspace: where the UAV is and where it is going within that airspace, be it a depot, gate, or delivery location. This separation of high-level and low-level planning means that the local planner only needs the GridMap and the global planner the inter-airspace graph. \par
 
 \vspace{1em}
 
@@ -141,53 +141,53 @@ The ASP performs collision detection on UAV trajectories continuously rather tha
 
 \vspace{1em}
 
-Continuous time collision detection complements a discrete event driven simulation as it does not require fixed ticks and removes the inherently flawed collision calculations those provide. Given a large enough time step, one can miss near collisions or even collision events entirely, as it may skip over the exact point the UAVs are closest to one another. \par
+Continuous-time collision detection complements a discrete-event-driven simulation as it does not require fixed ticks and removes the inherently flawed collision calculations those provide. Given a large enough time step, one can miss near collisions or even collision events entirely, as it may skip over the exact point the UAVs are closest to one another. \par
 
 \vspace{1em}
 
 \section{UAV management policy}
 
-The simulation framework supports a family of management policies that share a common interface, which allows them to be switched out within the configuration to allow for evaluating them under the same conditions. This section describes how the policies are abstracted, how the policies are evaluated and the mechanism by which they are instantiated. \par
+The simulation framework supports a family of management policies that share a common interface, which allows them to be switched out within the configuration to allow for evaluating them under the same conditions. This section describes how the policies are abstracted, how the policies are evaluated, and the mechanism by which they are instantiated. \par
 
 \vspace{1em}
 
 \subsection{The policy abstraction}
 
-All policies share a common abstract base class \texttt{MAPFPolicy}, which defines the operations every policy must support. The primary method is \texttt{plan\_path(start, goal, context)}. It returns a sequence of way points connecting to the start of the goal (subject to constraints such as WHCA* can return partial somewhat optimal paths which is its strength). The secondary method is \texttt{get\_velocity(uav, target)}, it returns the velocity at which the UAV should advance towards its next waypoint. By decoupling ASPs and UAVs from policies it ensures that the observed effects of changing a given policy are from difference in policy and not underlying code differences in state machines or elsewhere. \par
+All policies share a common abstract base class \texttt{MAPFPolicy}, which defines the operations every policy must support. The primary method is \texttt{plan\_path(start, goal, context)}. It returns a sequence of waypoints connecting to the start of the goal (subject to constraints such as WHCA* can return partial somewhat optimal paths which is its strength). The secondary method is \texttt{get\_velocity(uav, target)}, it returns the velocity at which the UAV should advance towards its next waypoint. By decoupling ASPs and UAVs from policies it ensures that the observed effects of changing a given policy are from difference in policy and not underlying code differences in state machines or elsewhere. \par
 
 \vspace{1em}
 
 \subsection{The eight evaluated policies}
 
-The eight policies span the three categories of search, unconstrained and uninformed, single agent informed and multi agent informed cooperative methods.\par
+The eight policies span the three categories of search, unconstrained and uninformed, single-agent informed, and multi-agent informed cooperative methods.\par
 
 \vspace{1em}
 
-Greedy is the simplest baseline. It performs no search, it just returns the start and end as way points, without even a collision check. Greedy was included as the lower bound for computation and job completion time and the higher bound for jobs completed. \par
+Greedy is the simplest baseline. It performs no search, it just returns the start and end as waypoints, without even a collision check. Greedy was included as the lower bound for computation and job completion time and the higher bound for jobs completed. \par
 
 \vspace{1em}
 
-Breadth First Search (BFS) and Depth First Search (DFS) are the two uninformed search baselines. BFS returns the path with the fewest grid steps from start to goal, while this does return the shortest path its method of exploring every grid cell around it expanding the search by 1 cell at a time should mean it returns a highly computationally inefficient result. DFS has likewise been added for comparison however as it searches to the maximum depth before backtracking it should result in very inefficient paths. \par
+Breadth-First Search (BFS) and Depth-First Search (DFS) are the two uninformed search baselines. BFS returns the path with the fewest grid steps from start to goal; while this does return the shortest path, its method of exploring every grid cell around it, expanding the search by one cell at a time, means it returns a highly computationally inefficient result. DFS has likewise been added for comparison; however, as it searches to the maximum depth before backtracking, it should result in very inefficient paths. \par
 
 \vspace{1em}
 
-A* is the single agent informed search baseline. It performs a weighted shortest path search over the grid using Euclidean distance for its heuristic. \par
+A* is the single-agent informed search baseline. It performs a weighted shortest path search over the grid using Euclidean distance for its heuristic. \par
 
 \vspace{1em}
 
-Greedy, BFS, DFS and A* are all unaware of the other agents within the environment so they should also give an insight into how much multi agent planning can reduce collisions. \par
+Greedy, BFS, DFS, and A* are all unaware of the other agents within the environment so they should also give an insight into how much multi-agent planning can reduce collisions. \par
 
 \vspace{1em}
 
-Occupancy A* extends A* with the awareness of other agents' current positions; before planning it gets the dynamic blocked set by putting temporary obstacles in the grid map where each UAV's radius covers. Occupancy A* occupies the midpoint between a full MAPF solution and single agent solutions. Its greatest set back is as soon as the plan is made it is likely almost all the UAVs will have moved from their current point to a new one and the algorithm does not update/account for this. \par
+Occupancy A* extends A* with the awareness of other agents' current positions; before planning, it gets the dynamic blocked set by putting temporary obstacles in the grid map where each UAV's radius covers. Occupancy A* occupies the midpoint between a full MAPF solution and single-agent solutions. Its greatest setback is that as soon as the plan is made, it is likely almost all the UAVs will have moved from their current points to new ones, and the algorithm does not update or account for this. \par
 
 \vspace{1em}
 
-Prioritised A* is the first of the three reservation based cooperative policies, drawing on the time expanded reservation table of Silver \cite{silver2005cooperative}. Each agent plans using a variant of A* in which search nodes are aware of the time in which a cell has been reserved as instead of just reserving their current cell they stamp their whole route into a reservation table. Future agents then must not reserve the same cells at that given time. Within the framework of this project I have added different priority modes such as hash based or first come first serve for agent planning. \par
+Prioritised A* is the first of the three reservation-based cooperative policies, drawing on the time-expanded reservation table of Silver \cite{silver2005cooperative}. Each agent plans using a variant of A* in which search nodes are aware of the time in which a cell has been reserved as instead of just reserving their current cell they stamp their whole route into a reservation table. Future agents then must not reserve the same cells at that given time. Within the framework of this project, I have added different priority modes such as hash-based or first-come, first-served for agent planning. \par
 
 \vspace{1em}
 
-Cooperative A* is a configured variant of Prioritised A* with two key differences: lexicographic priority ordering rather than hash based and an extended goal hold duration. The goal hold duration increase is key to preventing a recently arrived agent from being immediately displaced from its goal cell. While it shares the same underlying code as Prioritised A* they differ in configuration which can produce different results in the evaluation.\par
+Cooperative A* is a configured variant of Prioritised A* with two key differences: lexicographic priority ordering rather than hash-based and an extended goal hold duration. The goal hold duration increase is key to preventing a recently arrived agent from being immediately displaced from its goal cell. While it shares the same underlying code as Prioritised A*, they differ in configuration which can produce different results in the evaluation.\par
 
 \vspace{1em}
 
@@ -203,19 +203,19 @@ Policies are produced by a factory class which takes a policy identifier from th
 
 \section{Segment based reservation}
 
-The reservation mechanism is a key variable in the evaluation reported in Chapter 4. It extends the reservation table approach of Silver \cite{silver2005cooperative} from discrete cell time pairs to segment based reservations over intervals of a given velocity. A reservation commits a UAV to a trajectory segment over a continuous velocity, time window and its time of occupation. \par
+The reservation mechanism is a key variable in the evaluation reported in Chapter 4. It extends the reservation table approach of Silver \cite{silver2005cooperative} from discrete cell-time pairs to segment-based reservations over intervals of a given velocity. A reservation commits a UAV to a trajectory segment over a continuous velocity, time window, and its time of occupation. \par
 
 \vspace{1em}
 
-The implementation in the framework of this project is further unlike a discrete reservation table, as an overlap between two reservations is not in itself a conflict. When a new reservation overlaps an existing one in space, the ASP performs a continuous time check along the space between the two points given to determine whether the two UAVs will be present in the overlapping region simultaneously and rejects the new reservation only if both spatial and temporal overlap are confirmed. This is conceptually a coarse grained analogue of the safe interval reasoning in SIPP \cite{phillips2011sipp}, in which the same insight (that a vertex's occupancy varies over time and can support multiple agents at different times) is exploited to compress the search state space. The continuous time variant of this insight removes the artefacts of fixed step reservation tables and is what allows the mechanism to operate over vectors and not grids. Furthermore this approach is more efficient within a discrete event simulation as it doesn't require a constant timestep to check for conflicts in the background. \par
+The implementation in the framework of this project is further unlike a discrete reservation table, as an overlap between two reservations is not in itself a conflict. When a new reservation overlaps an existing one in space, the ASP performs a continuous-time check along the space between the two points given to determine whether the two UAVs will be present in the overlapping region simultaneously and rejects the new reservation only if both spatial and temporal overlap are confirmed. This is conceptually a coarse-grained analogue of the safe interval reasoning in SIPP \cite{phillips2011sipp}, in which the same insight (that a vertex's occupancy varies over time and can support multiple agents at different times) is exploited to compress the search state space. The continuous-time variant of this insight removes the artefacts of fixed step reservation tables and is what allows the mechanism to operate over vectors and not grids. Furthermore, this approach is more efficient within a discrete-event simulation as it doesn't require a constant timestep to check for conflicts in the background. \par
 
 \vspace{1em}
 
-When a UAV plans under a reservation aware policy (Prioritised A*, Cooperative A*, or WHCA*), the ASP requests existing reservations. Allowing these reservation aware policies to plan around any such conflicts. Non reservation aware policies (Greedy, BFS, DFS, A*, Occupancy A*) only passively interact with the reservation system, as they will update it with their plans but do not query it (allowing for conflict checks to be made by the ASP for metric collection).\par
+When a UAV plans under a reservation-aware policy (Prioritised A*, Cooperative A*, or WHCA*), the ASP requests existing reservations, allowing these reservation-aware policies to plan around any such conflicts. Non-reservation-aware policies (Greedy, BFS, DFS, A*, Occupancy A*) only passively interact with the reservation system, as they will update it with their plans but do not query it (allowing for conflict checks to be made by the ASP for metric collection).\par
 
 \vspace{1em}
 
-The \texttt{allow\_predicted\_collisions} parameter controls the simulation's response when a predicted conflict cannot be resolved by replanning. When \texttt{True}, the simulation permits the UAV to proceed and records any collision. I.e. The reservation table is advisory rather than binding. When \texttt{False}, the UAV transitions to \texttt{HOVER\_WAIT} and attempts to replan, escalating to \texttt{EMERGENCY} if repeated replans fail. The comparison between these two configurations is the central experimental variable of Chapter 4, isolating the contribution of strategic deconfliction by holding the underlying search algorithm constant and varying only whether reservations are enforced.\par
+The \texttt{allow\_predicted\_collisions} parameter controls the simulation's response when a predicted conflict cannot be resolved by replanning. When \texttt{True}, the simulation permits the UAV to proceed and records any collision. I.e., the reservation table is advisory rather than binding. When \texttt{False}, the UAV transitions to \texttt{HOVER\_WAIT} and attempts to replan, escalating to \texttt{EMERGENCY} if repeated replans fail. The comparison between these two configurations is the central experimental variable of Chapter 4, isolating the contribution of strategic deconfliction by holding the underlying search algorithm constant and varying only whether reservations are enforced.\par
 
 \vspace{1em}
 
@@ -225,6 +225,6 @@ The project was developed over approximately seven months using an iterative wor
 
 \vspace{1em}
 
-GitHub Projects was used to organise issues; they were organised into five columns (Backlog, Ready, In progress, In review, Done). They were further grouped into iterations representing approximately monthly milestones. Each issue carried estimates of size and priority allowing for better day to day planning of what needed to be done. Furthermore having milestones they would outline the general roadmap providing a longer term plan against which iteration progress could be assessed. Automated testing was configured through GitHub Actions. This allowed the test suite to be run each time a branch was merged giving an immediate signal to stop merging and to see what broke.\par
+GitHub Projects was used to organise issues; they were organised into five columns (Backlog, Ready, In progress, In review, Done). They were further grouped into iterations representing approximately monthly milestones. Each issue carried estimates of size and priority allowing for better day-to-day planning of what needed to be done. Furthermore, having milestones, they would outline the general roadmap providing a longer-term plan against which iteration progress could be assessed. Automated testing was configured through GitHub Actions. This allowed the test suite to be run each time a branch was merged giving an immediate signal to stop merging and to see what broke.\par
 
 \vspace{1em}

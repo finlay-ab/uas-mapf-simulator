@@ -1,25 +1,25 @@
 \begin{appendices}
 
 %
-% The first appendix must be "Self-appraisal".
+% The first appendix must be "Self appraisal".
 %
-\chapter{Self-appraisal}
+\chapter{Self appraisal}
 
-\section{Critical self-evaluation}
+\section{Critical self evaluation}
 
-From the perspective of the projects aims an objectives, the proect was successful. the framework supports and evaluating MAPF polices under controlled conditions. However looking back at the project there are limitations and trade offs worth acknowledging. \par
-
-\vspace{1em}
-
-The first concerns scope, the decision to implement eight policies from uninformed search to reservation based search wasnt the inital path of the project. Early on the plan was to have many more including coupled search methods and reactive polices, However as half finsihed polices built up, the simulation revealed to me the significance of reservation polices. This is when the narrower scope became more compelling. However this meant that the project didnt explore all the key MAPF strategies which was a trade off i thought was partially acceptable. \par
+From the perspective of the project's aims and objectives, the project was successful. The framework supports evaluating MAPF policies under controlled conditions. However, looking back at the project, there are limitations and trade offs worth acknowledging. \par
 
 \vspace{1em}
 
-The second concerns is the evaluation budget. Five seeds is the floor for descriptive comparison and supports the qualitative findings reported in Chapter~\ref{chapter4}, but it is genuinely insufficient for confidence interval reporting. This limitation was visible from early in the experimental phase but became binding only late, when full matrix runs at sim\_time = 1000\,s consumed more real world time than anticipated. Infact to simulate 1 "second" the simulation could take 7 real world seconds in using the worst case configurations. A more disciplined approach would have established that time would have been consumed by the evaluation allowing for an earlier start to testing for evaluation and therefor more seeds to be used. \par
+The first concerns scope. The decision to implement eight policies from uninformed search to reservation based search wasn't the initial path of the project. Early on, the plan was to have many more, including coupled search methods and reactive policies. However, as half finished policies built up, the simulation revealed to me the significance of reservation policies. This is when the narrower scope became more compelling. However, this meant that the project didn't explore all the key MAPF strategies, which was a trade off I thought was partially acceptable. \par
 
 \vspace{1em}
 
-The third concerns the completion rate plateau outlined in Section~4.4 it identifies an infrastructure bottleneck upstream of the policies, almost certainly in gate or depot resource capacity, but the project does not fully address where it comes from or how to mitigate it. It is arguably the most significant finding from the evaluation, but is the lead well understood  and given more time shouldve prompted fixing and re evaluating all togther. 
+The second concern is the evaluation budget. Five seeds is the floor for descriptive comparison and supports the qualitative findings reported in Chapter~\ref{chapter4}, but it is genuinely insufficient for confidence interval reporting. This limitation was visible from early in the experimental phase but became binding only late, when full matrix runs at sim\_time = 1000\,s consumed more real world time than anticipated. In fact, to simulate 1 "second", the simulation could take 7 real world seconds using the worst case configurations. A more disciplined approach would have established that time would have been consumed by the evaluation, allowing for an earlier start to testing for evaluation and therefore more seeds to be used. \par
+
+\vspace{1em}
+
+The third concerns the completion rate plateau outlined in Section~4.4. It identifies an infrastructure bottleneck upstream of the policies, almost certainly in gate or depot resource capacity, but the project does not fully address where it comes from or how to mitigate it. It is arguably the most significant finding from the evaluation, but is the least well understood and, given more time, should've prompted fixing and re evaluating all together. 
 
 \section{Personal reflection and lessons learned}
 
@@ -27,27 +27,27 @@ Some broader lessons emerged from seven months of development. \par
 
 \vspace{1em}
 
-The first was chosing to go down the route of a discrete event simulation framework with deterministic execution. It sounded like a reasonable approach, it was only a month in that i realised that i had made a time stepped simulation. The decision to change the code to a descrete event driven approach was a significant investiment, not only did it require the rewrite of the core simulation loop but it also required changing how planners interacted with the simulation making each one more complex then they would have otherwise been. However i dont fully regret that decision because going down that path lead me to finding segment based reservation which was a significant contribution to the project and also became an area of intrest i hadnt thought about before. This still doent mean i wont have made a large architectural decison as early as i did. \par
+The first was choosing to go down the route of a discrete event simulation framework with deterministic execution. It sounded like a reasonable approach; it was only a month in that I realised that I had made a time stepped simulation. The decision to change the code to a discrete event driven approach was a significant investment. Not only did it require the rewrite of the core simulation loop, but it also required changing how planners interacted with the simulation, making each one more complex than they would have otherwise been. However, I don't fully regret that decision because going down that path led me to finding segment based reservation, which was a significant contribution to the project and also became an area of interest I hadn't thought about before. This still doesn't mean I wouldn't have made a large architectural decision as early as I did. \par
 
 \vspace{1em}
 
-Second i found that similar research projects overlooked the complexities of designing a simulation framework, especially when it comes to the repetative side of software development. Setting up GitHub Projects with milestones, using feature branches with code review against the main branch, running the pytest suite under GitHub Actions on every push, and writing tests for components that would otherwise have been informally checked. These are conventional industrial practices, and they cost time that could in principle have gone into more features. If i had stuck to using the testing thoughout instead of letting it get out of date, bugs could be diagnosed more quickly because the tests around them established a known good baseline. I would adopt and stick to the same workflow on any future project of comparable scope without hesitation.\par
+Second, I found that similar research projects overlooked the complexities of designing a simulation framework, especially when it comes to the repetitive side of software development. Setting up GitHub Projects with milestones, using feature branches with code review against the main branch, running the pytest suite under GitHub Actions on every push, and writing tests for components that would otherwise have been informally checked. These are conventional industrial practices, and they cost time that could in principle have gone into more features. If I had stuck to using the testing throughout instead of letting it get out of date, bugs could be diagnosed more quickly because the tests around them established a known good baseline. I would adopt and stick to the same workflow on any future project of comparable scope without hesitation.\par
 
 \vspace{1em}
 
-A more specific reflection is on the value of writing about the work concurrently with doing the work. Several of the findings reported in Chapter~\ref{chapter4} bounded horizon completability in particular it became clear to me only when I attempted to describe them in writing. Treating drafting as a thinking tool rather than a final stage activity surfaced questions about the empirical results that I would otherwise have missed. Future projects would benefit from earlier and more frequent drafting cycles.\par
+A more specific reflection is on the value of writing about the work concurrently with doing the work. Several of the findings reported in Chapter~\ref{chapter4}, bounded horizon completability in particular, became clear to me only when I attempted to describe them in writing. Treating drafting as a thinking tool rather than a final stage activity surfaced questions about the empirical results that I would otherwise have missed. Future projects would benefit from earlier and more frequent drafting cycles.\par
 
 \vspace{1em}
 
-A final reflection is on risk management. The original proposal's risk mitigation plan identified the advanced MAPF policy as the descoping target if time ran short. In practice the binding constraint was the time left to test the framework rather than implementation effort and the descoping that did happen affected the seed budget rather than the policy set. The lesson is that risk plans constructed at proposal time tend to anticipate the wrong risks. A more useful approach next time would be to revisit and rewrite the risk plan at each major milestone rather than treating it as fixed.\par
+A final reflection is on risk management. The original proposal's risk mitigation plan identified the advanced MAPF policy as the descoping target if time ran short. In practice, the binding constraint was the time left to test the framework rather than implementation effort, and the descoping that did happen affected the seed budget rather than the policy set. The lesson is that risk plans constructed at proposal time tend to anticipate the wrong risks. A more useful approach next time would be to revisit and rewrite the risk plan at each major milestone rather than treating it as fixed.\par
 
 \vspace{1em}
 
-A reflection of a different kind concerns working around disruption. During the project I sustained a head injury and was subsequently diagnosed with post-concussion syndrome, which kept me away from the university for approximately a month and reduced my effective working capacity for some weeks after that. The most important lesson was the value of having a well structured project management system. Fortunetely i was upto date on my github project and my furure goals in the current and next milestone along with the tasks needed to be done with the time and difficulity allowed me to step back into the project with little downtime figuring out what to do next. \par
+A reflection of a different kind concerns working around disruption. During the project I sustained a head injury and was subsequently diagnosed with post concussion syndrome, which kept me away from the university for approximately a month and reduced my effective working capacity for some weeks after that. The most important lesson was the value of having a well structured project management system. Fortunately, I was up to date on my GitHub project and my future goals in the current and next milestone, along with the tasks needed to be done with the time and difficulty, allowed me to step back into the project with little downtime figuring out what to do next. \par
 
 \vspace{1em}
 
-If I were to identify a single thing I would do differently, it would be to design the metrics infrastructure earlier. The current metrics system was almost all designed after the bulk of the code was written. Looking back it would have been better to have it during development due to the key debugging role it can play. \par
+If I were to identify a single thing I would do differently, it would be to design the metrics infrastructure earlier. The current metrics system was almost all designed after the bulk of the code was written. Looking back, it would have been better to have it during development due to the key debugging role it can play. \par
 
 \vspace{1em}
 
@@ -55,55 +55,55 @@ If I were to identify a single thing I would do differently, it would be to desi
 
 \subsection{Legal issues}
 
-The project produced and evaluated a simulation frameowrk. It did not produce a deployed sytem, collect personal data or process infromation under the data protection regulations. The framework does not interact with real airspace and so does not fall under the regulations of the UK Civil Aviation Authority~\citep{caa2024bvlos} or the European Union Aviation Safety Agency~\citep{easa2025anra}. Therefor legal exposure for the project itself is minimal. However if the project was to be depolyed it would fall under the UTM regulatory frameworks such as the the european U-space regulations~\cite{easa2025anra}. One liablity the project could have would be if this framework was used to justify a legislative or operational decisions, however the project does contain a detailed limitations section to mitigate this risk. 
-Another potential issue is the use of open source software (SimPy, NumPy, pytest, matplotlib) however this was mitigated by using software under permissive licences and using them in accordance with those licences.\par
+The project produced and evaluated a simulation framework. It did not produce a deployed system, collect personal data or process information under the data protection regulations. The framework does not interact with real airspace and so does not fall under the regulations of the UK Civil Aviation Authority~\citep{caa2024bvlos} or the European Union Aviation Safety Agency~\citep{easa2025anra}. Therefore legal exposure for the project itself is minimal. However, if the project was to be deployed, it would fall under the UTM regulatory frameworks such as the European U-space regulations~\cite{easa2025anra}. One liability the project could have would be if this framework was used to justify legislative or operational decisions; however, the project does contain a detailed limitations section to mitigate this risk. 
+Another potential issue is the use of open source software (SimPy, NumPy, pytest, matplotlib); however, this was mitigated by using software under permissive licences and using them in accordance with those licences.\par
 
 \vspace{1em}
 
 \subsection{Social issues}
 
-The wider social context for urban UAS operations is non-trivial, even though the project itself is a simulation. It doesnt factor the affects of UAS traffic in dense urban areas nor does it track the social impact of Unmanned Areal Vehicles (UAVs) potentially alwasy choising a route near you as it is the most efficent. Furthermore UAVs typically have sensors such as cameras that will make people feel surveilled even if no surveillance is intended.  \par
+The wider social context for urban UAS operations is non trivial, even though the project itself is a simulation. It doesn't factor the effects of UAS traffic in dense urban areas, nor does it track the social impact of Unmanned Aerial Vehicles (UAVs) potentially always choosing a route near you as it is the most efficient. Furthermore, UAVs typically have sensors such as cameras that will make people feel surveilled even if no surveillance is intended.  \par
 
 \vspace{1em}
 
-On the flip side, the project has the potential to be benifitial in rurual spaces by allowing for more efficient deliveries to hard to reach places such as deliering a defibrillator or supplies to a remote location. Furhermore the project has the potential to reduce emissions by allowing for the use of typically electric UAVs for deliveries that may have been done through more carbon intensive means such as vans.
+On the flip side, the project has the potential to be beneficial in rural spaces by allowing for more efficient deliveries to hard to reach places such as delivering a defibrillator or supplies to a remote location. Furthermore, the project has the potential to reduce emissions by allowing for the use of typically electric UAVs for deliveries that may have been done through more carbon intensive means such as vans.
 
 
 \subsection{Ethical issues}
 
-The project did not involve participants from animals or humans and so the standard ethical review categories do not apply. However there are some ethical consdierations from the downstream affects of the project. \par
+The project did not involve participants from animals or humans and so the standard ethical review categories do not apply. However, there are some ethical considerations from the downstream effects of the project. \par
 
 \vspace{1em}
 
-First, the evaluation could be used to justify operational decisions in real UTM systems where mistakes have safety consequences. For example if someone was to copy or adapt the framework and find an unkown bug that made it unsafe it could lead to a real world accident. To mitigate that i have been open about the limitations of the evaluation. 
+First, the evaluation could be used to justify operational decisions in real UTM systems where mistakes have safety consequences. For example, if someone was to copy or adapt the framework and find an unknown bug that made it unsafe, it could lead to a real world accident. To mitigate that, I have been open about the limitations of the evaluation. 
 
 \vspace{1em}
 
-Second, real urban airspace could potentially be populated with a range of devices from emergency medical drones to commercial deliveries and hobbyist flights have different social value and a policy that performs well in aggregate may perform badly for the categories that matter most.\par
+Second, real urban airspace could potentially be populated with a range of devices from emergency medical drones to commercial deliveries, and hobbyist flights have different social value and a policy that performs well in aggregate may perform badly for the categories that matter most.\par
 
 \vspace{1em}
 
 \subsection{Professional issues}
 
-This project was conducted in accordance to the spirt of British Computer Society (BCS) code of conduct. The project used professional engineering tools such as version control and branches in github. The literature review and evaluation was conducted with integrity to distinguish the projects contributions from others work. \par
+This project was conducted in accordance with the spirit of the British Computer Society (BCS) code of conduct. The project used professional engineering tools such as version control and branches in GitHub. The literature review and evaluation was conducted with integrity to distinguish the project's contributions from others' work. \par
 
 \vspace{1em}
 
 %
-% Any other appendices you wish to use should come after "Self-appraisal".
+% Any other appendices you wish to use should come after "Self appraisal".
 %
 \chapter{External Material}
 
-The simulation framework, evaluation harness, and report were developed by the candidate. The following external materials were used as ready-made components in their unmodified forms.\par
+The simulation framework, evaluation harness, and report were developed by the candidate. The following external materials were used as ready made components in their unmodified forms.\par
 
 \vspace{1em}
 
 \begin{itemize}
-\item \textbf{SimPy} (version 4.x, BSD licence)~\citep{simpy2024}. Used as the discrete-event simulation core, as described in Section~2.1. UAV processes, job generators, and resource objects are implemented against the SimPy API; the simulation event loop is provided by SimPy.
-\item \textbf{NumPy} (BSD licence). Used for numerical operations on trajectory vectors and for continuous-time geometric calculations within the ASP.
-\item \textbf{Matplotlib} (PSF-style licence). Used for generation of the figures presented in Chapter~\ref{chapter4}.
+\item \textbf{SimPy} (version 4.x, BSD licence)~\citep{simpy2024}. Used as the discrete event simulation core, as described in Section~2.1. UAV processes, job generators, and resource objects are implemented against the SimPy API; the simulation event loop is provided by SimPy.
+\item \textbf{NumPy} (BSD licence). Used for numerical operations on trajectory vectors and for continuous time geometric calculations within the ASP.
+\item \textbf{Matplotlib} (PSF style licence). Used for generation of the figures presented in Chapter~\ref{chapter4}.
 \item \textbf{pytest} (MIT licence). Used as the test runner for the unit and integration test suite described in Section~3.4.
-\item \textbf{Python 3.12 standard library}. Used throughout; no claim is made over any standard-library functionality.
+\item \textbf{Python 3.12 standard library}. Used throughout; no claim is made over any standard library functionality.
 \item \textbf{University of Leeds Final Report \LaTeX{} template}. Used as the document template for this report, in accordance with the requirements published by the School of Computer Science.
 \end{itemize}
 
